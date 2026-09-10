@@ -21,7 +21,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   
   const { group, players, loading, calculateScores, getRankingForRater } = useGroupData(groupId);
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState<'teams' | 'players' | 'leaderboard' | 'rank' | 'rebalance' | 'settings'>('teams');
+  const [activeTab, setActiveTab] = useState<'teams' | 'rebalance' | 'players_rank' | 'leaderboard' | 'settings'>('teams');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
 
@@ -107,11 +107,19 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
             </button>
             
             <button 
-              onClick={() => setActiveTab('players')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'players' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}
+              onClick={() => setActiveTab('rebalance')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'rebalance' ? 'bg-teal-50 text-teal-700' : 'text-slate-500 hover:bg-slate-50'}`}
             >
-              <Users size={20} />
-              <span>שחקנים</span>
+              <RefreshCw size={20} />
+              <span>איזון מחדש</span>
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('players_rank')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'players_rank' ? 'bg-fuchsia-50 text-fuchsia-700' : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+              <ClipboardList size={20} />
+              <span>שחקנים ודירוג</span>
             </button>
 
             {canSeeRankings && (
@@ -123,22 +131,6 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
                 <span>מובילים</span>
               </button>
             )}
-            
-            <button 
-              onClick={() => setActiveTab('rank')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'rank' ? 'bg-fuchsia-50 text-fuchsia-700' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-              <ClipboardList size={20} />
-              <span>דירוג</span>
-            </button>
-            
-            <button 
-              onClick={() => setActiveTab('rebalance')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'rebalance' ? 'bg-teal-50 text-teal-700' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-              <RefreshCw size={20} />
-              <span>איזון מחדש</span>
-            </button>
 
             {isAdmin && (
               <button 
@@ -154,28 +146,28 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
 
         <main className="pb-20">
           {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} />}
-          {activeTab === 'players' && (
-            <PlayersList 
-              players={players} 
-              onAddPlayer={(name) => addPlayerToGroup(groupId, name)} 
-              onRemovePlayer={(playerId) => removePlayerFromGroup(groupId, playerId)}
-              canAdd={canAddPlayers} 
-            />
+          {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} />}
+          {activeTab === 'players_rank' && (
+            <div className="space-y-6">
+              <PlayersList 
+                players={players} 
+                onAddPlayer={(name) => addPlayerToGroup(groupId, name)} 
+                onRemovePlayer={(playerId) => removePlayerFromGroup(groupId, playerId)}
+                canAdd={canAddPlayers} 
+              />
+              <RankingForm 
+                groupId={groupId}
+                players={players} 
+                onSubmitRanking={handleClaimAndRank} 
+                getRankingForRater={getRankingForRater} 
+                requireLogin={requireLoginToRank}
+                user={user}
+              />
+            </div>
           )}
           {activeTab === 'leaderboard' && canSeeRankings && (
             <Leaderboard scores={scores} />
           )}
-          {activeTab === 'rank' && (
-            <RankingForm 
-              groupId={groupId}
-              players={players} 
-              onSubmitRanking={handleClaimAndRank} 
-              getRankingForRater={getRankingForRater} 
-              requireLogin={requireLoginToRank}
-              user={user}
-            />
-          )}
-          {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} />}
           {activeTab === 'settings' && isAdmin && (
             <GroupSettingsPanel group={group} />
           )}
