@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
+import toast from 'react-hot-toast';
 
 export default function RankingForm({ 
   groupId,
@@ -44,6 +45,7 @@ export default function RankingForm({
   const [rankedPlayers, setRankedPlayers] = useState<Player[]>([]);
   const [unrankedPlayers, setUnrankedPlayers] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState('');
+  const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
 
   // If requireLogin, automatically set raterId if they claimed a player
   useEffect(() => {
@@ -124,13 +126,13 @@ export default function RankingForm({
 
   const handleSubmit = () => {
     if (requireLogin && !user) {
-      return alert('יש להתחבר תחילה כדי לדרג.');
+      return toast.error('יש להתחבר תחילה כדי לדרג.');
     }
-    if (!raterId) return alert('אנא בחר מי אתה למעלה.');
-    if (rankedPlayers.length < 2) return alert('חייבים לדרג לפחות 2 שחקנים.');
+    if (!raterId) return toast.error('אנא בחר מי אתה למעלה.');
+    if (rankedPlayers.length < 2) return toast.error('חייבים לדרג לפחות 2 שחקנים.');
     
     onSubmitRanking(raterId, rankedPlayers.map(p => p.id));
-    alert('הדירוג נשמר בהצלחה!');
+    toast.success('הדירוג נשמר בהצלחה!');
   };
 
   if (players.length === 0) return null;
@@ -245,11 +247,7 @@ export default function RankingForm({
                     </button>
                     {canAdd && (
                       <button 
-                        onClick={() => {
-                          if (confirm(`למחוק את ${p.name} מהקבוצה?`)) {
-                            onRemovePlayer(p.id);
-                          }
-                        }}
+                        onClick={() => setPlayerToDelete(p)}
                         className="px-2 py-1.5 border-r border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition-colors"
                         title="מחק שחקן"
                       >
@@ -261,6 +259,35 @@ export default function RankingForm({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {playerToDelete && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="text-xl font-bold text-slate-800 mb-2">מחיקת שחקן</h3>
+            <p className="text-slate-600 mb-6">
+              האם אתה בטוח שברצונך למחוק את <strong>{playerToDelete.name}</strong> מהקבוצה?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPlayerToDelete(null)}
+                className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold hover:bg-slate-200 transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={() => {
+                  onRemovePlayer(playerToDelete.id);
+                  setPlayerToDelete(null);
+                  toast.success('שחקן נמחק מהקבוצה');
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors"
+              >
+                מחק שחקן
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

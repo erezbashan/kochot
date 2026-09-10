@@ -6,6 +6,7 @@ import { createGroup, getUserGroups, Group } from '@/lib/firestore';
 import { useRouter } from 'next/navigation';
 import { Users, LogIn, Plus, ArrowLeft } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
+import toast from 'react-hot-toast';
 
 export default function LandingPage() {
   const { user, loading, signOut } = useAuth();
@@ -31,7 +32,7 @@ export default function LandingPage() {
       router.push(`/g/${groupId}`);
     } catch (error) {
       console.error(error);
-      alert('שגיאה ביצירת קבוצה');
+      toast.error('שגיאה ביצירת קבוצה');
     }
     setCreating(false);
   };

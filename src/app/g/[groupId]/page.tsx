@@ -11,6 +11,7 @@ import AuthModal from '@/components/AuthModal';
 import { addPlayerToGroup, removePlayerFromGroup, submitRanking, claimPlayer } from '@/lib/firestore';
 import { useState, use } from 'react';
 import { Users, Trophy, ClipboardList, RefreshCw, Settings, LogIn, Share2, LogOut } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 export default function GroupPage({ params }: { params: Promise<{ groupId: string }> }) {
@@ -44,13 +45,13 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
         // Claim this player
         claimPlayer(groupId, raterId, user.uid);
       } else if (existingClaim.id !== raterId) {
-        alert("אתה כבר משויך לשחקן אחר בקבוצה זו.");
+        toast.error("אתה כבר משויך לשחקן אחר בקבוצה זו.");
         return;
       }
     }
     
-    // Save to local storage so the browser remembers anonymously
-    if (typeof window !== 'undefined') {
+    // Save to local storage for anonymous users or fast memory
+    if (!user) {
       localStorage.setItem(`kochot_${groupId}_raterId`, raterId);
     }
     
@@ -59,7 +60,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('קישור הועתק!');
+    toast.success('קישור הועתק!');
   };
 
   return (

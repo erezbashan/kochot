@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { PlayerScore } from '@/hooks/useGroupData';
 import { generateTeams, Team } from '@/lib/teamGenerator';
 import { Users, UserPlus, Zap, Check, X } from 'lucide-react';
@@ -49,16 +50,16 @@ export default function TeamGenerator({ scores, showScores }: { scores: PlayerSc
   };
 
   const handleGenerate = () => {
-    if (selectedIds.size % 2 !== 0) {
-      return alert('יש לבחור מספר זוגי של שחקנים.');
-    }
-    if (selectedIds.size === 0) {
-      return alert('יש לבחור שחקנים כדי ליצור קבוצות.');
-    }
-
     const allScores = [...scores, ...guests];
     const selectedPlayers = allScores.filter(s => selectedIds.has(s.player.id));
     
+    if (selectedPlayers.length === 0) {
+      return toast.error('יש לבחור שחקנים כדי ליצור קבוצות.');
+    }
+    if (selectedPlayers.length % 2 !== 0) {
+      return toast.error('יש לבחור מספר זוגי של שחקנים.');
+    }
+
     const teams = generateTeams(selectedPlayers);
     setGeneratedTeams(teams);
   };

@@ -9,6 +9,7 @@ import {
   signInWithEmailAndPassword
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import toast from 'react-hot-toast';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -27,8 +28,8 @@ export function useAuth() {
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
-      console.error("Error signing in with Google", error);
-      alert("שגיאה בהתחברות עם גוגל");
+      console.error(error);
+      toast.error("שגיאה בהתחברות עם גוגל");
     }
   };
 

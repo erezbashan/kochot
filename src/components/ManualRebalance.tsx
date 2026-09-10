@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PlayerScore } from '@/hooks/useGroupData';
 import { rebalanceTeams, Team } from '@/lib/teamGenerator';
 import { RefreshCw, ArrowLeftRight, CheckCircle2, UserPlus, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function ManualRebalance({ scores, showScores }: { scores: PlayerScore[], showScores: boolean }) {
   const [whiteTeamIds, setWhiteTeamIds] = useState<Set<string>>(new Set());
@@ -92,12 +93,12 @@ export default function ManualRebalance({ scores, showScores }: { scores: Player
   };
 
   const handleRebalance = () => {
-    if (whiteTeamIds.size === 0 || blackTeamIds.size === 0) {
-      return alert('יש להוסיף שחקנים לשתי הקבוצות.');
-    }
-
     const whitePlayers = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id));
     const blackPlayers = allAvailableScores.filter(s => blackTeamIds.has(s.player.id));
+
+    if (whitePlayers.length === 0 || blackPlayers.length === 0) {
+      return toast.error('יש להוסיף שחקנים לשתי הקבוצות.');
+    }
     
     const teamWhite: Team = {
       name: 'לבן',
