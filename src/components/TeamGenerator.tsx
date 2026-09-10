@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PlayerScore } from '@/lib/store';
 import { generateTeams, Team } from '@/lib/teamGenerator';
-import { Users, UserPlus, Zap } from 'lucide-react';
+import { Users, UserPlus, Zap, Check, X } from 'lucide-react';
 
 export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -21,7 +21,6 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
       newSet.add(id);
     }
     setSelectedIds(newSet);
-    setGeneratedTeams(null);
   };
 
   const addGuest = (e: React.FormEvent) => {
@@ -67,47 +66,46 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
   const allAvailableScores = [...scores, ...guests];
 
   return (
-    <div className="bg-white p-6 md:p-10 rounded-3xl shadow-2xl" dir="rtl">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 -mx-6 md:-mx-10 -mt-6 md:-mt-10 p-8 rounded-t-3xl mb-8 text-white shadow-lg">
-        <h2 className="text-3xl md:text-4xl font-extrabold mb-2 text-white">יצירת קבוצות (כוחות)</h2>
-        <p className="text-blue-100 text-lg font-medium">בחר שחקנים, הוסף אורחים וצור קבוצות מאוזנות.</p>
+    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200" dir="rtl">
+      <div className="mb-6 border-b pb-4">
+        <h2 className="text-xl md:text-2xl font-bold text-slate-800">מי משחק היום?</h2>
       </div>
       
       {/* Guests Section */}
-      <div className="mb-10 p-6 rounded-2xl bg-blue-50 border-2 border-blue-100">
-        <h3 className="font-extrabold text-blue-900 mb-4 flex items-center gap-2 text-xl">
-          <UserPlus size={24} className="text-blue-600" />
-          הוספת אורח (לא חובה)
+      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
+          <UserPlus size={16} />
+          הוספת אורח
         </h3>
-        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-4">
+        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
           <input 
             type="text" 
             value={guestName}
             onChange={(e) => setGuestName(e.target.value)}
             placeholder="שם האורח"
-            className="flex-1 border-2 border-blue-200 p-4 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg font-bold"
+            className="flex-1 border border-slate-300 p-2 rounded-lg focus:border-blue-500 outline-none text-sm"
           />
-          <div className="flex gap-4">
+          <div className="flex gap-2">
             <input 
               type="number" 
               value={guestScore}
               onChange={(e) => setGuestScore(e.target.value)}
-              placeholder="ציון (0-100)"
-              className="w-32 border-2 border-blue-200 p-4 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg font-bold"
+              placeholder="ציון"
+              className="w-20 border border-slate-300 p-2 rounded-lg focus:border-blue-500 outline-none text-sm text-center"
               min="0" max="100"
             />
-            <button type="submit" className="bg-blue-800 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-900 shadow-md font-black text-lg whitespace-nowrap">
+            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center justify-center hover:bg-slate-800 text-sm font-semibold">
               הוסף
             </button>
           </div>
         </form>
         {guests.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-3 flex flex-wrap gap-2">
             {guests.map(g => (
-              <span key={g.player.id} className="bg-white border-2 border-blue-200 shadow-sm px-5 py-2 rounded-full text-base font-bold text-gray-700 flex items-center gap-3">
-                {g.player.name} <span className="text-gray-300">|</span> <span className="text-blue-600">{g.score}</span>
-                <button onClick={() => removeGuest(g.player.id)} className="text-red-500 bg-red-50 hover:bg-red-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors text-xl font-bold">
-                  &times;
+              <span key={g.player.id} className="bg-white border border-slate-300 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
+                {g.player.name} <span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span>
+                <button onClick={() => removeGuest(g.player.id)} className="text-slate-400 hover:text-red-500 ml-1">
+                  <X size={14} />
                 </button>
               </span>
             ))}
@@ -115,31 +113,37 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
         )}
       </div>
 
-      <div className="mb-10">
-        <div className="flex justify-between items-end mb-6">
-          <h3 className="font-extrabold text-gray-800 text-2xl">מי משחק היום?</h3>
-          <span className="bg-blue-100 text-blue-900 px-4 py-1.5 rounded-full text-lg font-black shadow-sm">
-            {selectedIds.size} נבחרו
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <button 
+        onClick={handleGenerate}
+        className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-blue-700 flex justify-center items-center gap-2 mb-6 transition-colors shadow-sm"
+      >
+        <Zap size={20} /> 
+        <span>עשה כוחות ({selectedIds.size} נבחרו)</span>
+      </button>
+
+      <div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {allAvailableScores.map(s => {
             const isSelected = selectedIds.has(s.player.id);
             return (
               <button
                 key={s.player.id}
                 onClick={() => togglePlayer(s.player.id)}
-                className={`p-4 rounded-2xl flex flex-col justify-center items-center transition-all border-4 h-32 ${
+                className={`p-3 rounded-xl flex flex-col justify-center items-center transition-all border-2 h-20 relative overflow-hidden ${
                   isSelected 
-                    ? 'bg-blue-50 border-blue-500 shadow-md transform scale-105 z-10' 
-                    : 'bg-white border-gray-100 hover:border-gray-300 hover:shadow-lg'
+                    ? 'bg-blue-500 border-blue-600 text-white shadow-sm' 
+                    : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
-                <span className={`text-center font-black text-xl line-clamp-1 mb-2 ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>
+                {isSelected && (
+                  <div className="absolute top-1 right-1">
+                    <Check size={14} className="text-blue-100" />
+                  </div>
+                )}
+                <span className={`text-center font-bold text-sm line-clamp-1`}>
                   {s.player.name}
                 </span>
-                <span className={`text-lg font-mono font-bold ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>
+                <span className={`text-xs font-mono mt-1 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
                   {s.score.toFixed(1)}
                 </span>
               </button>
@@ -148,51 +152,53 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
         </div>
       </div>
 
-      <button 
-        onClick={handleGenerate}
-        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-2xl font-black text-3xl hover:from-blue-700 hover:to-indigo-700 flex justify-center items-center gap-4 shadow-xl hover:shadow-2xl transition-all active:scale-[0.98] mb-10"
-      >
-        <Zap size={36} /> 
-        <span>צור קבוצות מאוזנות!</span>
-      </button>
-
       {generatedTeams && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h3 className="text-3xl font-black text-gray-900 mb-6">תוצאות</h3>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white border-4 border-gray-200 rounded-3xl overflow-hidden shadow-xl">
-              <div className="bg-gray-100 p-6 border-b-4 border-gray-200 flex justify-between items-center">
-                <h3 className="text-2xl font-black text-gray-800">קבוצה לבנה (White)</h3>
-                <span className="font-mono font-black bg-white px-4 py-2 rounded-xl text-lg border-2 shadow-sm text-gray-700">
-                  סה"כ: {generatedTeams.teamWhite.totalScore.toFixed(1)}
-                </span>
-              </div>
-              <ul className="p-4 space-y-3">
-                {generatedTeams.teamWhite.players.map(p => (
-                  <li key={p.player.id} className="flex justify-between items-center text-xl p-4 hover:bg-gray-50 rounded-xl border-2 border-transparent hover:border-gray-100 transition-colors">
-                    <span className="font-bold text-gray-800">{p.player.name}</span>
-                    <span className="font-mono font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-lg text-lg">{p.score.toFixed(1)}</span>
-                  </li>
-                ))}
-              </ul>
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+              <h3 className="text-xl font-bold text-slate-800">הקבוצות מוכנות!</h3>
+              <button 
+                onClick={() => setGeneratedTeams(null)} 
+                className="p-2 bg-white border border-slate-200 rounded-full text-slate-500 hover:bg-slate-100"
+              >
+                <X size={20} />
+              </button>
             </div>
-
-            <div className="bg-gray-900 border-4 border-black rounded-3xl overflow-hidden shadow-xl text-white">
-              <div className="bg-black p-6 border-b-4 border-gray-800 flex justify-between items-center">
-                <h3 className="text-2xl font-black text-gray-100">קבוצה שחורה (Black)</h3>
-                <span className="font-mono font-black bg-gray-800 px-4 py-2 rounded-xl text-lg border-2 border-gray-700 text-gray-300">
-                  סה"כ: {generatedTeams.teamBlack.totalScore.toFixed(1)}
-                </span>
+            
+            <div className="p-4 overflow-y-auto space-y-4">
+              <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden">
+                <div className="bg-slate-100 p-3 border-b border-slate-200 flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-slate-800">קבוצה לבנה</h3>
+                  <span className="font-mono font-bold bg-white px-2 py-1 rounded text-sm border border-slate-200 text-slate-600">
+                    סה"כ: {generatedTeams.teamWhite.totalScore.toFixed(1)}
+                  </span>
+                </div>
+                <ul className="p-2 space-y-1">
+                  {generatedTeams.teamWhite.players.map(p => (
+                    <li key={p.player.id} className="flex justify-between items-center text-sm p-2 bg-white rounded">
+                      <span className="font-bold text-slate-700">{p.player.name}</span>
+                      <span className="font-mono text-slate-400">{p.score.toFixed(1)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="p-4 space-y-3">
-                {generatedTeams.teamBlack.players.map(p => (
-                  <li key={p.player.id} className="flex justify-between items-center text-xl p-4 hover:bg-gray-800 rounded-xl border-2 border-transparent hover:border-gray-700 transition-colors">
-                    <span className="font-bold text-gray-200">{p.player.name}</span>
-                    <span className="font-mono font-bold text-gray-400 bg-gray-800 px-3 py-1 rounded-lg text-lg">{p.score.toFixed(1)}</span>
-                  </li>
-                ))}
-              </ul>
+
+              <div className="bg-slate-900 border-2 border-slate-800 rounded-xl overflow-hidden text-white">
+                <div className="bg-black p-3 border-b border-slate-800 flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-slate-100">קבוצה שחורה</h3>
+                  <span className="font-mono font-bold bg-slate-800 px-2 py-1 rounded text-sm border border-slate-700 text-slate-300">
+                    סה"כ: {generatedTeams.teamBlack.totalScore.toFixed(1)}
+                  </span>
+                </div>
+                <ul className="p-2 space-y-1">
+                  {generatedTeams.teamBlack.players.map(p => (
+                    <li key={p.player.id} className="flex justify-between items-center text-sm p-2 bg-slate-900 rounded">
+                      <span className="font-bold text-slate-200">{p.player.name}</span>
+                      <span className="font-mono text-slate-500">{p.score.toFixed(1)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>

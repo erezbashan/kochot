@@ -18,18 +18,26 @@ export function SortableItem({ player, index, onRemove }: { player: Player, inde
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.8 : 1,
+    touchAction: 'none' // Important for mobile DND
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={`flex items-center gap-4 p-4 md:p-5 bg-white border-2 border-gray-200 rounded-xl shadow-sm mb-3 relative transition-all ${isDragging ? 'z-50 ring-4 ring-purple-400 scale-105 shadow-xl' : 'hover:border-purple-300'}`}>
-      <button {...attributes} {...listeners} className="text-gray-400 hover:text-purple-600 p-2 cursor-grab active:cursor-grabbing bg-gray-50 rounded-lg">
-        <GripVertical size={28} />
-      </button>
-      <span className="font-black text-2xl text-purple-300 w-8 text-center">{index + 1}.</span>
-      <span className="flex-1 text-xl md:text-2xl font-bold text-gray-800">{player.name}</span>
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      {...listeners}
+      className={`flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm mb-2 relative transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'z-50 ring-2 ring-blue-400 scale-[1.02] shadow-md' : 'hover:border-blue-200'}`}
+    >
+      <div className="text-gray-300">
+        <GripVertical size={20} />
+      </div>
+      <span className="font-bold text-lg text-gray-400 w-6 text-center">{index + 1}.</span>
+      <span className="flex-1 text-lg font-semibold text-gray-700">{player.name}</span>
       <button 
+        onPointerDown={(e) => e.stopPropagation()} // Prevent DND from intercepting click
         onClick={() => onRemove(player.id)} 
-        className="text-rose-500 hover:bg-rose-50 hover:text-rose-700 border-2 border-rose-100 px-4 py-2 rounded-lg text-base md:text-lg font-extrabold transition-colors shadow-sm"
+        className="text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
       >
         לא מכיר
       </button>
