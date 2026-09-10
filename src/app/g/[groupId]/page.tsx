@@ -47,6 +47,12 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
         return;
       }
     }
+    
+    // Save to local storage so the browser remembers anonymously
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`kochot_${groupId}_raterId`, raterId);
+    }
+    
     submitRanking(groupId, raterId, rankedIds);
   };
 
@@ -155,6 +161,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
           )}
           {activeTab === 'rank' && canSeeRankings && (
             <RankingForm 
+              groupId={groupId}
               players={players} 
               onSubmitRanking={handleClaimAndRank} 
               getRankingForRater={getRankingForRater} 

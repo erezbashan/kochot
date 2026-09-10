@@ -20,12 +20,14 @@ import {
 import { SortableItem } from './SortableItem';
 
 export default function RankingForm({ 
+  groupId,
   players, 
   onSubmitRanking, 
   getRankingForRater,
   requireLogin,
   user
 }: { 
+  groupId: string,
   players: Player[], 
   onSubmitRanking: (raterId: string, rankedIds: string[]) => void,
   getRankingForRater: (raterId: string) => Ranking | undefined,
@@ -38,13 +40,20 @@ export default function RankingForm({
 
   // If requireLogin, automatically set raterId if they claimed a player
   useEffect(() => {
-    if (requireLogin && user) {
+    if (user) {
       const claimedPlayer = players.find(p => p.claimedByUserId === user.uid);
       if (claimedPlayer) {
         setRaterId(claimedPlayer.id);
+        return;
       }
     }
-  }, [requireLogin, user, players]);
+    
+    // Fallback to local storage for anonymous or uncliamed memory
+    const saved = localStorage.getItem(`kochot_${groupId}_raterId`);
+    if (saved && players.some(p => p.id === saved)) {
+      setRaterId(saved);
+    }
+  }, [user, players, groupId]);
 
   useEffect(() => {
     if (!raterId) {
