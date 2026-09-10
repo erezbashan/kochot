@@ -1,13 +1,10 @@
 {
-  "apphosting": {
-    "backendId": "kochot",
-    "rootDir": "/",
+  "hosting": {
+    "source": ".",
     "ignore": [
-      "node_modules",
-      ".git",
-      "firebase-debug.log",
-      "firebase-debug.*.log",
-      "functions"
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
     ]
   }
 }
