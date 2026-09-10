@@ -7,7 +7,6 @@ import RankingForm from '@/components/RankingForm';
 import TeamGenerator from '@/components/TeamGenerator';
 import ManualRebalance from '@/components/ManualRebalance';
 import GroupSettingsPanel from '@/components/GroupSettingsPanel';
-import PlayersList from '@/components/PlayersList';
 import AuthModal from '@/components/AuthModal';
 import { addPlayerToGroup, removePlayerFromGroup, submitRanking, claimPlayer } from '@/lib/firestore';
 import { useState, use } from 'react';
@@ -148,22 +147,17 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
           {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} />}
           {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} />}
           {activeTab === 'players_rank' && (
-            <div className="space-y-6">
-              <PlayersList 
-                players={players} 
-                onAddPlayer={(name) => addPlayerToGroup(groupId, name)} 
-                onRemovePlayer={(playerId) => removePlayerFromGroup(groupId, playerId)}
-                canAdd={canAddPlayers} 
-              />
-              <RankingForm 
-                groupId={groupId}
-                players={players} 
-                onSubmitRanking={handleClaimAndRank} 
-                getRankingForRater={getRankingForRater} 
-                requireLogin={requireLoginToRank}
-                user={user}
-              />
-            </div>
+            <RankingForm 
+              groupId={groupId}
+              players={players} 
+              onSubmitRanking={handleClaimAndRank} 
+              getRankingForRater={getRankingForRater} 
+              requireLogin={requireLoginToRank}
+              user={user}
+              onAddPlayer={(name) => addPlayerToGroup(groupId, name)}
+              onRemovePlayer={(playerId) => removePlayerFromGroup(groupId, playerId)}
+              canAdd={canAddPlayers}
+            />
           )}
           {activeTab === 'leaderboard' && canSeeRankings && (
             <Leaderboard scores={scores} />

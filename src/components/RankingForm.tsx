@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Player, Ranking } from '@/lib/firestore';
 import { User } from 'firebase/auth';
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus, UserPlus, X } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -25,18 +25,25 @@ export default function RankingForm({
   onSubmitRanking, 
   getRankingForRater,
   requireLogin,
-  user
+  user,
+  onAddPlayer,
+  onRemovePlayer,
+  canAdd
 }: { 
   groupId: string,
   players: Player[], 
   onSubmitRanking: (raterId: string, rankedIds: string[]) => void,
   getRankingForRater: (raterId: string) => Ranking | undefined,
   requireLogin: boolean,
-  user: User | null
+  user: User | null,
+  onAddPlayer: (name: string) => void,
+  onRemovePlayer: (id: string) => void,
+  canAdd: boolean
 }) {
   const [raterId, setRaterId] = useState('');
   const [rankedPlayers, setRankedPlayers] = useState<Player[]>([]);
   const [unrankedPlayers, setUnrankedPlayers] = useState<Player[]>([]);
+  const [newPlayerName, setNewPlayerName] = useState('');
 
   // If requireLogin, automatically set raterId if they claimed a player
   useEffect(() => {
@@ -163,6 +170,31 @@ export default function RankingForm({
         </div>
       )}
 
+      {canAdd && (
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (newPlayerName.trim()) {
+              onAddPlayer(newPlayerName.trim());
+              setNewPlayerName('');
+            }
+          }} 
+          className="flex gap-2 mb-6 bg-slate-50 p-2 rounded-xl border border-slate-200"
+        >
+          <input 
+            type="text" 
+            value={newPlayerName}
+            onChange={(e) => setNewPlayerName(e.target.value)}
+            placeholder="הוסף שחקן חדש..."
+            className="flex-1 bg-transparent px-4 outline-none text-base font-medium placeholder:text-slate-400"
+          />
+          <button type="submit" className="bg-fuchsia-600 text-white p-3 rounded-lg flex items-center justify-center gap-2 hover:bg-fuchsia-700 shadow-sm transition-colors font-bold">
+            <UserPlus size={20} />
+            <span className="hidden sm:inline">הוסף</span>
+          </button>
+        </form>
+      )}
+
       {!raterId ? (
         <div className="text-center p-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl font-bold">
           בחר את שמך למעלה כדי להתחיל לדרג
@@ -203,14 +235,28 @@ export default function RankingForm({
               </h3>
               <div className="flex flex-wrap gap-2">
                 {unrankedPlayers.map(p => (
-                  <button 
-                    key={p.id} 
-                    onClick={() => moveToRanked(p.id)}
-                    className="flex items-center gap-1 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-full text-sm font-bold text-slate-700 transition-colors shadow-sm"
-                  >
-                    <span>{p.name}</span>
-                    <Plus size={14} className="text-slate-400" />
-                  </button>
+                  <div key={p.id} className="flex items-center bg-white border border-slate-300 rounded-full shadow-sm overflow-hidden">
+                    <button 
+                      onClick={() => moveToRanked(p.id)}
+                      className="flex items-center gap-1 hover:bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-700 transition-colors"
+                    >
+                      <span>{p.name}</span>
+                      <Plus size={14} className="text-slate-400" />
+                    </button>
+                    {canAdd && (
+                      <button 
+                        onClick={() => {
+                          if (confirm(`למחוק את ${p.name} מהקבוצה?`)) {
+                            onRemovePlayer(p.id);
+                          }
+                        }}
+                        className="px-2 py-1.5 border-r border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition-colors"
+                        title="מחק שחקן"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
