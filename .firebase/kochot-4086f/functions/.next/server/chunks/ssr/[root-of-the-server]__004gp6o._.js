@@ -1,3 +1,0 @@
-module.exports=[33341,a=>{a.v({className:"rubik_bec9c396-module__9cVRAa__className"})},27572,a=>{"use strict";var b=a.i(7997),c=a.i(33341);let d={className:c.default.className,style:{fontFamily:"'Rubik', 'Rubik Fallback'",fontStyle:"normal"}};null!=c.default.variable&&(d.variable=c.default.variable),a.s(["default",0,function({children:a}){return(0,b.jsx)("html",{lang:"he",dir:"rtl",children:(0,b.jsx)("body",{className:`${d.className} antialiased min-h-full flex flex-col bg-slate-50 text-slate-900`,children:a})})},"metadata",0,{title:"Kochot (כוחות)",description:"Rate players and generate balanced teams"}],27572)},50645,function(a){a.n(a.i(27572))}];
-
-//# sourceMappingURL=%5Broot-of-the-server%5D__004gp6o._.js.map
