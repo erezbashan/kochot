@@ -82,12 +82,17 @@ export default function RankingForm({
         if (p) loadedRanked.push(p);
       });
 
-      const loadedUnranked = otherPlayers.filter(p => !rankedIds.includes(p.id));
+      const loadedUnranked = otherPlayers
+        .filter(p => !rankedIds.includes(p.id))
+        .sort((a, b) => a.name.localeCompare(b.name, 'he'));
       
       setRankedPlayers(loadedRanked);
       setUnrankedPlayers(loadedUnranked);
     } else {
-      setRankedPlayers(players.filter(p => p.id !== raterId));
+      const initialRanked = players
+        .filter(p => p.id !== raterId)
+        .sort((a, b) => a.name.localeCompare(b.name, 'he'));
+      setRankedPlayers(initialRanked);
       setUnrankedPlayers([]);
     }
   }, [raterId, players, getRankingForRater]);
@@ -233,7 +238,7 @@ export default function RankingForm({
           {unrankedPlayers.length > 0 && (
             <div className="mt-4 border-t pt-4">
               <h3 className="font-bold text-slate-500 mb-3 text-sm">
-                לא מכיר / לא מדרג ({unrankedPlayers.length})
+                הוצאו מהדירוג ({unrankedPlayers.length})
               </h3>
               <div className="flex flex-wrap gap-2">
                 {unrankedPlayers.map(p => (
