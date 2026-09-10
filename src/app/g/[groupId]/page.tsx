@@ -119,7 +119,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'players_rank' ? 'bg-fuchsia-50 text-fuchsia-700' : 'text-slate-500 hover:bg-slate-50'}`}
             >
               <ClipboardList size={20} />
-              <span>שחקנים ודירוג</span>
+              <span>שחקנים</span>
             </button>
 
             {canSeeRankings && (
