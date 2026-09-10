@@ -5,12 +5,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { createGroup, getUserGroups, Group } from '@/lib/firestore';
 import { useRouter } from 'next/navigation';
 import { Users, LogIn, Plus, ArrowLeft } from 'lucide-react';
+import AuthModal from '@/components/AuthModal';
 
 export default function LandingPage() {
-  const { user, loading, signInWithGoogle, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen p-6 font-sans bg-slate-50 text-slate-800" dir="rtl">
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <div className="max-w-2xl mx-auto mt-10">
         <header className="mb-10 text-center">
           <div className="inline-flex items-center justify-center bg-blue-100 p-4 rounded-3xl mb-4">
@@ -54,11 +57,11 @@ export default function LandingPage() {
             <div className="text-center py-8">
               <h2 className="text-2xl font-bold mb-6 text-slate-800">התחבר כדי לנהל קבוצות</h2>
               <button 
-                onClick={signInWithGoogle}
+                onClick={() => setShowAuthModal(true)}
                 className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 flex items-center gap-3 mx-auto shadow-md transition-colors"
               >
                 <LogIn size={24} />
-                התחבר עם גוגל
+                התחבר למערכת
               </button>
             </div>
           ) : (

@@ -32,6 +32,14 @@ export function useAuth() {
     }
   };
 
+  const signInWithEmail = async (email: string, pass: string) => {
+    await signInWithEmailAndPassword(auth, email, pass);
+  };
+
+  const signUpWithEmail = async (email: string, pass: string) => {
+    await createUserWithEmailAndPassword(auth, email, pass);
+  };
+
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
@@ -40,5 +48,5 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, signInWithGoogle, signOut };
+  return { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut };
 }
