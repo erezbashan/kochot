@@ -7,7 +7,8 @@ import RankingForm from '@/components/RankingForm';
 import TeamGenerator from '@/components/TeamGenerator';
 import ManualRebalance from '@/components/ManualRebalance';
 import GroupSettingsPanel from '@/components/GroupSettingsPanel';
-import { addPlayerToGroup, submitRanking, claimPlayer } from '@/lib/firestore';
+import PlayersList from '@/components/PlayersList';
+import { addPlayerToGroup, removePlayerFromGroup, submitRanking, claimPlayer } from '@/lib/firestore';
 import { useState, use } from 'react';
 import { Users, Trophy, ClipboardList, RefreshCw, Settings, LogIn, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +20,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   
   const { group, players, loading, calculateScores, getRankingForRater } = useGroupData(groupId);
   const { user, signInWithGoogle } = useAuth();
-  const [activeTab, setActiveTab] = useState<'teams' | 'leaderboard' | 'rank' | 'rebalance' | 'settings'>('teams');
+  const [activeTab, setActiveTab] = useState<'teams' | 'players' | 'leaderboard' | 'rank' | 'rebalance' | 'settings'>('teams');
   const router = useRouter();
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl" dir="rtl">טוען קבוצה...</div>;
@@ -91,23 +92,33 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
               <span>עשה כוחות</span>
             </button>
             
-            {canSeeRankings && (
-              <button 
-                onClick={() => setActiveTab('leaderboard')}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'leaderboard' ? 'bg-amber-50 text-amber-700' : 'text-slate-500 hover:bg-slate-50'}`}
-              >
-                <Trophy size={20} />
-                <span>מובילים</span>
-              </button>
-            )}
-            
             <button 
-              onClick={() => setActiveTab('rank')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'rank' ? 'bg-fuchsia-50 text-fuchsia-700' : 'text-slate-500 hover:bg-slate-50'}`}
+              onClick={() => setActiveTab('players')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'players' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}
             >
-              <ClipboardList size={20} />
-              <span>דירוג</span>
+              <Users size={20} />
+              <span>שחקנים</span>
             </button>
+
+            {canSeeRankings && (
+              <>
+                <button 
+                  onClick={() => setActiveTab('leaderboard')}
+                  className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'leaderboard' ? 'bg-amber-50 text-amber-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                  <Trophy size={20} />
+                  <span>מובילים</span>
+                </button>
+                
+                <button 
+                  onClick={() => setActiveTab('rank')}
+                  className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'rank' ? 'bg-fuchsia-50 text-fuchsia-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                  <ClipboardList size={20} />
+                  <span>דירוג</span>
+                </button>
+              </>
+            )}
             
             <button 
               onClick={() => setActiveTab('rebalance')}
@@ -123,7 +134,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
                 className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'settings' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
               >
                 <Settings size={20} />
-                <span>הגדרות</span>
+                <span>הגדרות קבוצה</span>
               </button>
             )}
           </div>
@@ -131,10 +142,18 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
 
         <main className="pb-20">
           {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} />}
-          {activeTab === 'leaderboard' && canSeeRankings && (
-            <Leaderboard scores={scores} onAddPlayer={(name) => addPlayerToGroup(groupId, name)} canAdd={canAddPlayers} />
+          {activeTab === 'players' && (
+            <PlayersList 
+              players={players} 
+              onAddPlayer={(name) => addPlayerToGroup(groupId, name)} 
+              onRemovePlayer={(playerId) => removePlayerFromGroup(groupId, playerId)}
+              canAdd={canAddPlayers} 
+            />
           )}
-          {activeTab === 'rank' && (
+          {activeTab === 'leaderboard' && canSeeRankings && (
+            <Leaderboard scores={scores} />
+          )}
+          {activeTab === 'rank' && canSeeRankings && (
             <RankingForm 
               players={players} 
               onSubmitRanking={handleClaimAndRank} 

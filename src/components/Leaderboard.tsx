@@ -1,18 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PlayerScore } from '@/hooks/useGroupData';
-import { UserPlus } from 'lucide-react';
 
-export default function Leaderboard({ scores, onAddPlayer, canAdd }: { scores: PlayerScore[], onAddPlayer: (name: string) => void, canAdd: boolean }) {
-  const [newPlayerName, setNewPlayerName] = useState('');
-
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPlayerName.trim() && canAdd) {
-      onAddPlayer(newPlayerName.trim());
-      setNewPlayerName('');
-    }
-  };
-
+export default function Leaderboard({ scores }: { scores: PlayerScore[] }) {
   return (
     <div className="bg-white p-4 md:p-8 rounded-2xl shadow-xl border border-slate-100" dir="rtl">
       <div className="bg-gradient-to-r from-amber-500 to-orange-500 -mx-4 md:-mx-8 -mt-4 md:-mt-8 p-6 rounded-t-2xl mb-6 text-white flex justify-between items-end">
@@ -22,25 +11,9 @@ export default function Leaderboard({ scores, onAddPlayer, canAdd }: { scores: P
         </div>
       </div>
       
-      {canAdd && (
-        <form onSubmit={handleAdd} className="flex gap-2 mb-8 bg-slate-50 p-2 rounded-xl border border-slate-200">
-          <input 
-            type="text" 
-            value={newPlayerName}
-            onChange={(e) => setNewPlayerName(e.target.value)}
-            placeholder="שם השחקן החדש..."
-            className="flex-1 bg-transparent px-4 outline-none text-base font-medium placeholder:text-slate-400"
-          />
-          <button type="submit" className="bg-amber-500 text-white p-3 rounded-lg flex items-center justify-center gap-2 hover:bg-amber-600 shadow-sm transition-colors font-bold">
-            <UserPlus size={20} />
-            <span className="hidden sm:inline">הוסף שחקן</span>
-          </button>
-        </form>
-      )}
-
       {scores.length === 0 ? (
         <div className="text-center p-10 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 font-medium">
-          אין שחקנים במערכת עדיין.<br/>{canAdd && 'הוסף שחקנים למעלה!'}
+          אין שחקנים במערכת עדיין.
         </div>
       ) : (
         <div className="space-y-3">
