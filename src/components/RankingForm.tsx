@@ -148,17 +148,17 @@ export default function RankingForm({
             className="w-full border border-slate-300 focus:border-purple-500 focus:ring-purple-500 p-3 rounded-lg text-base font-bold text-slate-800 bg-white disabled:bg-slate-100" 
             value={raterId} 
             onChange={(e) => setRaterId(e.target.value)}
-            disabled={Boolean(requireLogin && isClaimedByUser)}
+            disabled={Boolean(user && isClaimedByUser)}
           >
             <option value="">בחר את שמך...</option>
             {players.map(p => (
-              <option key={p.id} value={p.id} disabled={Boolean(requireLogin && p.claimedByUserId !== null && p.claimedByUserId !== user?.uid)}>
-                {p.name} {requireLogin && p.claimedByUserId && p.claimedByUserId !== user?.uid ? '(כבר שויך למישהו אחר)' : ''}
+              <option key={p.id} value={p.id} disabled={Boolean(p.claimedByUserId !== null && p.claimedByUserId !== user?.uid)}>
+                {p.name} {p.claimedByUserId && p.claimedByUserId !== user?.uid ? '(כבר שויך למשתמש אחר)' : ''}
               </option>
             ))}
           </select>
-          {requireLogin && !isClaimedByUser && raterId && (
-            <p className="text-xs text-orange-600 mt-2 font-bold">שים לב: שמירה תשייך את המשתמש שלך לשחקן זה לתמיד.</p>
+          {user && !isClaimedByUser && raterId && (
+            <p className="text-xs text-orange-600 mt-2 font-bold">שים לב: שמירה תשייך את המשתמש שלך לשחקן זה בקבוצה לתמיד.</p>
           )}
         </div>
       )}

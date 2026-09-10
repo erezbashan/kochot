@@ -36,7 +36,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
 
   // Handle player claim
   const handleClaimAndRank = (raterId: string, rankedIds: string[]) => {
-    if (requireLoginToRank && user) {
+    if (user) {
       // Check if user already claimed someone
       const existingClaim = players.find(p => p.claimedByUserId === user.uid);
       if (!existingClaim) {
