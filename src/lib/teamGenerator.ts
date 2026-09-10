@@ -1,4 +1,4 @@
-import { PlayerScore } from './store';
+import { PlayerScore } from '@/hooks/useGroupData';
 
 export type Team = {
   name: string; // 'לבן' or 'שחור'

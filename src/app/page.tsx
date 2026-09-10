@@ -1,76 +1,123 @@
 "use client";
 
-import { useKochotStore } from '@/lib/store';
-import Leaderboard from '@/components/Leaderboard';
-import RankingForm from '@/components/RankingForm';
-import TeamGenerator from '@/components/TeamGenerator';
-import ManualRebalance from '@/components/ManualRebalance';
-import { useState } from 'react';
-import { Users, Trophy, ClipboardList, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { createGroup, getUserGroups, Group } from '@/lib/firestore';
+import { useRouter } from 'next/navigation';
+import { Users, LogIn, Plus, ArrowLeft } from 'lucide-react';
 
-export default function Home() {
-  const store = useKochotStore();
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'rank' | 'teams' | 'rebalance'>('leaderboard');
+export default function LandingPage() {
+  const { user, loading, signInWithGoogle, signOut } = useAuth();
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const router = useRouter();
 
-  if (!store.isLoaded) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 text-blue-600 font-bold text-xl" dir="rtl">
-      טוען נתונים...
-    </div>
-  );
+  useEffect(() => {
+    if (user) {
+      getUserGroups(user.uid).then(setGroups);
+    }
+  }, [user]);
 
-  const scores = store.calculateScores();
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newGroupName.trim()) return;
+    
+    setCreating(true);
+    try {
+      const groupId = await createGroup(newGroupName.trim(), user.uid);
+      router.push(`/g/${groupId}`);
+    } catch (error) {
+      console.error(error);
+      alert('שגיאה ביצירת קבוצה');
+    }
+    setCreating(false);
+  };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50">טוען...</div>;
+  }
 
   return (
-    <div className="min-h-screen p-2 md:p-6 font-sans bg-slate-50 text-slate-800" dir="rtl">
-      <div className="max-w-2xl mx-auto">
-        <header className="mb-6 mt-4 text-center">
-          <div className="inline-flex items-center justify-center bg-blue-100 p-3 rounded-2xl mb-3">
-            <Users size={32} className="text-blue-600" />
+    <div className="min-h-screen p-6 font-sans bg-slate-50 text-slate-800" dir="rtl">
+      <div className="max-w-2xl mx-auto mt-10">
+        <header className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center bg-blue-100 p-4 rounded-3xl mb-4">
+            <Users size={48} className="text-blue-600" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-2 tracking-tight">
-            כוחות
-          </h1>
+          <h1 className="text-5xl font-black text-slate-900 mb-2 tracking-tight">כוחות</h1>
+          <p className="text-slate-500 text-lg font-medium">המערכת החכמה לחלוקת קבוצות ספורט</p>
         </header>
 
-        <div className="flex justify-center mb-6 overflow-x-auto p-1 hide-scrollbar">
-          <div className="flex bg-white rounded-xl shadow-sm p-1.5 min-w-max border border-slate-200 gap-1">
-            <button 
-              onClick={() => setActiveTab('leaderboard')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'leaderboard' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-              <Trophy size={20} />
-              <span>מובילים</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('rank')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'rank' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-              <ClipboardList size={20} />
-              <span>דירוג</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('teams')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'teams' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-              <Users size={20} />
-              <span>עשה כוחות</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('rebalance')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'rebalance' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
-            >
-              <RefreshCw size={20} />
-              <span>איזון מחדש</span>
-            </button>
-          </div>
-        </div>
+        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+          {!user ? (
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold mb-6 text-slate-800">התחבר כדי לנהל קבוצות</h2>
+              <button 
+                onClick={signInWithGoogle}
+                className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 flex items-center gap-3 mx-auto shadow-md transition-colors"
+              >
+                <LogIn size={24} />
+                התחבר עם גוגל
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="flex justify-between items-center mb-8 border-b pb-4">
+                <div className="flex items-center gap-3">
+                  {user.photoURL && <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full" />}
+                  <div>
+                    <h2 className="font-bold text-slate-800">שלום, {user.displayName}</h2>
+                    <span className="text-sm text-slate-500">{user.email}</span>
+                  </div>
+                </div>
+                <button onClick={signOut} className="text-slate-500 hover:text-red-500 text-sm font-bold">התנתק</button>
+              </div>
 
-        <main className="pb-20">
-          {activeTab === 'leaderboard' && <Leaderboard scores={scores} onAddPlayer={store.addPlayer} />}
-          {activeTab === 'rank' && <RankingForm players={store.players} onSubmitRanking={store.addRanking} getRankingForRater={store.getRankingForRater} />}
-          {activeTab === 'teams' && <TeamGenerator scores={scores} />}
-          {activeTab === 'rebalance' && <ManualRebalance scores={scores} />}
-        </main>
+              <div className="mb-8">
+                <h3 className="font-bold text-xl mb-4 text-slate-800">הקבוצות שלי</h3>
+                {groups.length === 0 ? (
+                  <p className="text-slate-500 bg-slate-50 p-4 rounded-xl border border-slate-200">עדיין אין לך קבוצות. צור אחת למטה!</p>
+                ) : (
+                  <div className="space-y-3">
+                    {groups.map(g => (
+                      <button 
+                        key={g.id}
+                        onClick={() => router.push(`/g/${g.id}`)}
+                        className="w-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 p-4 rounded-xl flex justify-between items-center transition-colors group"
+                      >
+                        <span className="font-bold text-lg text-slate-800 group-hover:text-blue-800">{g.name}</span>
+                        <ArrowLeft className="text-slate-400 group-hover:text-blue-500" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                <h3 className="font-bold text-xl mb-4 text-blue-900">יצירת קבוצה חדשה</h3>
+                <form onSubmit={handleCreateGroup} className="flex gap-3">
+                  <input 
+                    type="text" 
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="שם הקבוצה (למשל: כדורגל שישי)"
+                    className="flex-1 px-4 py-3 rounded-xl border border-blue-200 focus:border-blue-500 outline-none font-medium"
+                    required
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={creating}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 disabled:opacity-50 shadow-md"
+                  >
+                    <Plus size={20} />
+                    {creating ? 'יוצר...' : 'צור'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import { Player } from '@/lib/store';
+import { Player } from '@/lib/firestore';
 
 export function SortableItem({ player, index, onRemove }: { player: Player, index: number, onRemove: (id: string) => void }) {
   const {

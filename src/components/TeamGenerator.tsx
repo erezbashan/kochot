@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { PlayerScore } from '@/lib/store';
+import { PlayerScore } from '@/hooks/useGroupData';
 import { generateTeams, Team } from '@/lib/teamGenerator';
 import { Users, UserPlus, Zap, Check, X } from 'lucide-react';
 
-export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
+export default function TeamGenerator({ scores, showScores }: { scores: PlayerScore[], showScores: boolean }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   // Guests feature
@@ -27,7 +27,7 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
     e.preventDefault();
     if (guestName.trim() && !isNaN(Number(guestScore))) {
       const newGuest: PlayerScore = {
-        player: { id: `guest-${Date.now()}`, name: `${guestName.trim()} (אורח)` },
+        player: { id: `guest-${Date.now()}`, name: `${guestName.trim()} (אורח)`, claimedByUserId: null },
         score: Number(guestScore),
         rankingsCount: 0
       };
@@ -103,7 +103,7 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
           <div className="mt-3 flex flex-wrap gap-2">
             {guests.map(g => (
               <span key={g.player.id} className="bg-white border border-slate-300 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
-                {g.player.name} <span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span>
+                {g.player.name} {showScores && <><span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span></>}
                 <button onClick={() => removeGuest(g.player.id)} className="text-slate-400 hover:text-red-500 ml-1">
                   <X size={14} />
                 </button>
@@ -143,9 +143,11 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
                 <span className={`text-center font-bold text-sm line-clamp-1`}>
                   {s.player.name}
                 </span>
-                <span className={`text-xs font-mono mt-1 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
-                  {s.score.toFixed(1)}
-                </span>
+                {showScores && (
+                  <span className={`text-xs font-mono mt-1 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
+                    {s.score.toFixed(1)}
+                  </span>
+                )}
               </button>
             )
           })}
@@ -169,15 +171,17 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
               <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden">
                 <div className="bg-slate-100 p-3 border-b border-slate-200 flex justify-between items-center">
                   <h3 className="text-lg font-bold text-slate-800">קבוצה לבנה</h3>
-                  <span className="font-mono font-bold bg-white px-2 py-1 rounded text-sm border border-slate-200 text-slate-600">
-                    סה"כ: {generatedTeams.teamWhite.totalScore.toFixed(1)}
-                  </span>
+                  {showScores && (
+                    <span className="font-mono font-bold bg-white px-2 py-1 rounded text-sm border border-slate-200 text-slate-600">
+                      סה"כ: {generatedTeams.teamWhite.totalScore.toFixed(1)}
+                    </span>
+                  )}
                 </div>
                 <ul className="p-2 space-y-1">
                   {generatedTeams.teamWhite.players.map(p => (
                     <li key={p.player.id} className="flex justify-between items-center text-sm p-2 bg-white rounded">
                       <span className="font-bold text-slate-700">{p.player.name}</span>
-                      <span className="font-mono text-slate-400">{p.score.toFixed(1)}</span>
+                      {showScores && <span className="font-mono text-slate-400">{p.score.toFixed(1)}</span>}
                     </li>
                   ))}
                 </ul>
@@ -186,15 +190,17 @@ export default function TeamGenerator({ scores }: { scores: PlayerScore[] }) {
               <div className="bg-slate-900 border-2 border-slate-800 rounded-xl overflow-hidden text-white">
                 <div className="bg-black p-3 border-b border-slate-800 flex justify-between items-center">
                   <h3 className="text-lg font-bold text-slate-100">קבוצה שחורה</h3>
-                  <span className="font-mono font-bold bg-slate-800 px-2 py-1 rounded text-sm border border-slate-700 text-slate-300">
-                    סה"כ: {generatedTeams.teamBlack.totalScore.toFixed(1)}
-                  </span>
+                  {showScores && (
+                    <span className="font-mono font-bold bg-slate-800 px-2 py-1 rounded text-sm border border-slate-700 text-slate-300">
+                      סה"כ: {generatedTeams.teamBlack.totalScore.toFixed(1)}
+                    </span>
+                  )}
                 </div>
                 <ul className="p-2 space-y-1">
                   {generatedTeams.teamBlack.players.map(p => (
                     <li key={p.player.id} className="flex justify-between items-center text-sm p-2 bg-slate-900 rounded">
                       <span className="font-bold text-slate-200">{p.player.name}</span>
-                      <span className="font-mono text-slate-500">{p.score.toFixed(1)}</span>
+                      {showScores && <span className="font-mono text-slate-500">{p.score.toFixed(1)}</span>}
                     </li>
                   ))}
                 </ul>

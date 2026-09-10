@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { PlayerScore } from '@/lib/store';
+import { PlayerScore } from '@/hooks/useGroupData';
 import { rebalanceTeams, Team } from '@/lib/teamGenerator';
 import { RefreshCw, ArrowLeftRight, CheckCircle2, UserPlus, X } from 'lucide-react';
 
-export default function ManualRebalance({ scores }: { scores: PlayerScore[] }) {
+export default function ManualRebalance({ scores, showScores }: { scores: PlayerScore[], showScores: boolean }) {
   const [whiteTeamIds, setWhiteTeamIds] = useState<Set<string>>(new Set());
   const [blackTeamIds, setBlackTeamIds] = useState<Set<string>>(new Set());
   
@@ -26,7 +26,7 @@ export default function ManualRebalance({ scores }: { scores: PlayerScore[] }) {
     e.preventDefault();
     if (guestName.trim() && !isNaN(Number(guestScore))) {
       const newGuest: PlayerScore = {
-        player: { id: `guest-${Date.now()}`, name: `${guestName.trim()} (אורח)` },
+        player: { id: `guest-${Date.now()}`, name: `${guestName.trim()} (אורח)`, claimedByUserId: null },
         score: Number(guestScore),
         rankingsCount: 0
       };
@@ -180,7 +180,7 @@ export default function ManualRebalance({ scores }: { scores: PlayerScore[] }) {
           <div className="mt-3 flex flex-wrap gap-2">
             {guests.map(g => (
               <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
-                {g.player.name} | {g.score}
+                {g.player.name} {showScores && `| ${g.score}`}
                 <button onClick={() => removeGuest(g.player.id)} className="text-red-500 hover:text-red-700"><X size={14} /></button>
               </span>
             ))}
@@ -249,7 +249,7 @@ export default function ManualRebalance({ scores }: { scores: PlayerScore[] }) {
               onClick={() => handlePlayerClick(s.player.id)}
               className="bg-white border border-slate-200 px-3 py-2 rounded-lg text-sm text-slate-700 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-sm"
             >
-              {s.player.name} <span className="text-xs text-slate-400 ml-1">{s.score.toFixed(1)}</span>
+              {s.player.name} {showScores && <span className="text-xs text-slate-400 ml-1">{s.score.toFixed(1)}</span>}
             </div>
           ))}
         </div>
@@ -293,10 +293,12 @@ export default function ManualRebalance({ scores }: { scores: PlayerScore[] }) {
                     </div>
                   </div>
                   
-                  <div className="text-xs text-slate-500 flex justify-center gap-4">
-                    <span>פער לפני: {rebalanceResult.diffBefore.toFixed(1)}</span>
-                    <span className="text-emerald-600 font-bold">פער אחרי: {rebalanceResult.diffAfter.toFixed(1)}</span>
-                  </div>
+                  {showScores && (
+                    <div className="text-xs text-slate-500 flex justify-center gap-4">
+                      <span>פער לפני: {rebalanceResult.diffBefore.toFixed(1)}</span>
+                      <span className="text-emerald-600 font-bold">פער אחרי: {rebalanceResult.diffAfter.toFixed(1)}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { PlayerScore } from '@/lib/store';
+import { PlayerScore } from '@/hooks/useGroupData';
 import { UserPlus } from 'lucide-react';
 
-export default function Leaderboard({ scores, onAddPlayer }: { scores: PlayerScore[], onAddPlayer: (name: string) => void }) {
+export default function Leaderboard({ scores, onAddPlayer, canAdd }: { scores: PlayerScore[], onAddPlayer: (name: string) => void, canAdd: boolean }) {
   const [newPlayerName, setNewPlayerName] = useState('');
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPlayerName.trim()) {
+    if (newPlayerName.trim() && canAdd) {
       onAddPlayer(newPlayerName.trim());
       setNewPlayerName('');
     }
@@ -22,23 +22,25 @@ export default function Leaderboard({ scores, onAddPlayer }: { scores: PlayerSco
         </div>
       </div>
       
-      <form onSubmit={handleAdd} className="flex gap-2 mb-8 bg-slate-50 p-2 rounded-xl border border-slate-200">
-        <input 
-          type="text" 
-          value={newPlayerName}
-          onChange={(e) => setNewPlayerName(e.target.value)}
-          placeholder="שם השחקן החדש..."
-          className="flex-1 bg-transparent px-4 outline-none text-base font-medium placeholder:text-slate-400"
-        />
-        <button type="submit" className="bg-amber-500 text-white p-3 rounded-lg flex items-center justify-center gap-2 hover:bg-amber-600 shadow-sm transition-colors font-bold">
-          <UserPlus size={20} />
-          <span className="hidden sm:inline">הוסף שחקן</span>
-        </button>
-      </form>
+      {canAdd && (
+        <form onSubmit={handleAdd} className="flex gap-2 mb-8 bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <input 
+            type="text" 
+            value={newPlayerName}
+            onChange={(e) => setNewPlayerName(e.target.value)}
+            placeholder="שם השחקן החדש..."
+            className="flex-1 bg-transparent px-4 outline-none text-base font-medium placeholder:text-slate-400"
+          />
+          <button type="submit" className="bg-amber-500 text-white p-3 rounded-lg flex items-center justify-center gap-2 hover:bg-amber-600 shadow-sm transition-colors font-bold">
+            <UserPlus size={20} />
+            <span className="hidden sm:inline">הוסף שחקן</span>
+          </button>
+        </form>
+      )}
 
       {scores.length === 0 ? (
         <div className="text-center p-10 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 font-medium">
-          אין שחקנים במערכת עדיין.<br/>הוסף שחקנים למעלה!
+          אין שחקנים במערכת עדיין.<br/>{canAdd && 'הוסף שחקנים למעלה!'}
         </div>
       ) : (
         <div className="space-y-3">

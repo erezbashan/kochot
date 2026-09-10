@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Player, Ranking } from '@/lib/store';
+import { Player, Ranking } from '@/lib/firestore';
+import { User } from 'firebase/auth';
 import { Check, Plus } from 'lucide-react';
 import {
   DndContext,
@@ -21,17 +22,30 @@ import { SortableItem } from './SortableItem';
 export default function RankingForm({ 
   players, 
   onSubmitRanking, 
-  getRankingForRater 
+  getRankingForRater,
+  requireLogin,
+  user
 }: { 
   players: Player[], 
   onSubmitRanking: (raterId: string, rankedIds: string[]) => void,
-  getRankingForRater: (raterId: string) => Ranking | undefined
+  getRankingForRater: (raterId: string) => Ranking | undefined,
+  requireLogin: boolean,
+  user: User | null
 }) {
   const [raterId, setRaterId] = useState('');
   const [rankedPlayers, setRankedPlayers] = useState<Player[]>([]);
   const [unrankedPlayers, setUnrankedPlayers] = useState<Player[]>([]);
 
-  // When rater changes, load their previous ranking
+  // If requireLogin, automatically set raterId if they claimed a player
+  useEffect(() => {
+    if (requireLogin && user) {
+      const claimedPlayer = players.find(p => p.claimedByUserId === user.uid);
+      if (claimedPlayer) {
+        setRaterId(claimedPlayer.id);
+      }
+    }
+  }, [requireLogin, user, players]);
+
   useEffect(() => {
     if (!raterId) {
       setRankedPlayers([]);
@@ -42,7 +56,6 @@ export default function RankingForm({
     const previousRanking = getRankingForRater(raterId);
     if (previousRanking) {
       const rankedIds = previousRanking.rankedPlayerIds;
-      // Filter out the rater from the lists
       const otherPlayers = players.filter(p => p.id !== raterId);
       
       const loadedRanked: Player[] = [];
@@ -56,21 +69,14 @@ export default function RankingForm({
       setRankedPlayers(loadedRanked);
       setUnrankedPlayers(loadedUnranked);
     } else {
-      // New rater - default all other players to ranked
       setRankedPlayers(players.filter(p => p.id !== raterId));
       setUnrankedPlayers([]);
     }
   }, [raterId, players, getRankingForRater]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -101,62 +107,70 @@ export default function RankingForm({
   };
 
   const handleSubmit = () => {
+    if (requireLogin && !user) {
+      return alert('יש להתחבר תחילה כדי לדרג.');
+    }
     if (!raterId) return alert('אנא בחר מי אתה למעלה.');
     if (rankedPlayers.length < 2) return alert('חייבים לדרג לפחות 2 שחקנים.');
     
     onSubmitRanking(raterId, rankedPlayers.map(p => p.id));
-    alert('הדירוג נשמר בהצלחה! התוצאות עודכנו.');
+    alert('הדירוג נשמר בהצלחה!');
   };
 
   if (players.length === 0) return null;
 
+  const isClaimedByUser = user && players.find(p => p.claimedByUserId === user.uid)?.id === raterId;
+
   return (
-    <div className="bg-white p-6 md:p-10 rounded-3xl shadow-2xl" dir="rtl">
-      <div className="bg-gradient-to-r from-fuchsia-500 to-purple-600 -mx-6 md:-mx-10 -mt-6 md:-mt-10 p-8 rounded-t-3xl mb-8 text-white shadow-lg">
-        <h2 className="text-3xl md:text-4xl font-extrabold mb-2 text-white">דירוג שחקנים</h2>
-        <p className="text-fuchsia-100 text-lg font-medium">סדר את השחקנים מהטוב ביותר למעלה, לגרוע ביותר למטה.</p>
+    <div className="bg-white p-4 md:p-8 rounded-2xl shadow-xl border border-slate-100" dir="rtl">
+      <div className="bg-gradient-to-r from-fuchsia-500 to-purple-600 -mx-4 md:-mx-8 -mt-4 md:-mt-8 p-6 rounded-t-2xl mb-6 text-white">
+        <h2 className="text-2xl font-bold">דירוג שחקנים</h2>
+        <p className="opacity-90 text-sm mt-1">סדר את השחקנים מהטוב ביותר למעלה</p>
       </div>
       
-      <div className="mb-8 bg-purple-50 p-6 rounded-2xl border-2 border-purple-100 shadow-inner">
-        <label className="block text-xl font-bold text-purple-900 mb-3">מי אתה?</label>
-        <select 
-          className="w-full border-2 border-purple-200 shadow-sm focus:border-purple-500 focus:ring-purple-500 p-4 rounded-xl text-xl font-bold text-gray-800 bg-white" 
-          value={raterId} 
-          onChange={(e) => setRaterId(e.target.value)}
-        >
-          <option value="">בחר את שמך...</option>
-          {players.map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {!raterId ? (
-        <div className="text-center p-12 text-purple-400 border-4 border-dashed border-purple-100 rounded-2xl text-2xl font-bold bg-white">
-          אנא בחר את שמך למעלה כדי להתחיל לדרג
+      {requireLogin && !user ? (
+        <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 mb-6 font-bold text-center">
+          מנהל הקבוצה הגדיר כי חובה להתחבר כדי לדרג. אנא חזור לעמוד הקבוצה והתחבר.
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
-          
+        <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <label className="block text-sm font-bold text-slate-700 mb-2">מי אתה?</label>
+          <select 
+            className="w-full border border-slate-300 focus:border-purple-500 focus:ring-purple-500 p-3 rounded-lg text-base font-bold text-slate-800 bg-white disabled:bg-slate-100" 
+            value={raterId} 
+            onChange={(e) => setRaterId(e.target.value)}
+            disabled={Boolean(requireLogin && isClaimedByUser)}
+          >
+            <option value="">בחר את שמך...</option>
+            {players.map(p => (
+              <option key={p.id} value={p.id} disabled={Boolean(requireLogin && p.claimedByUserId !== null && p.claimedByUserId !== user?.uid)}>
+                {p.name} {requireLogin && p.claimedByUserId && p.claimedByUserId !== user?.uid ? '(כבר שויך למישהו אחר)' : ''}
+              </option>
+            ))}
+          </select>
+          {requireLogin && !isClaimedByUser && raterId && (
+            <p className="text-xs text-orange-600 mt-2 font-bold">שים לב: שמירה תשייך את המשתמש שלך לשחקן זה לתמיד.</p>
+          )}
+        </div>
+      )}
+
+      {!raterId ? (
+        <div className="text-center p-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl font-bold">
+          בחר את שמך למעלה כדי להתחיל לדרג
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
           <div>
-            <div className="flex justify-between items-end mb-4 px-2">
-              <h3 className="font-extrabold text-2xl text-gray-800">רשימה לדירוג</h3>
-              <span className="text-lg font-bold bg-purple-200 text-purple-900 px-4 py-1.5 rounded-full shadow-sm">{rankedPlayers.length} מדורגים</span>
+            <div className="flex justify-between items-end mb-3">
+              <h3 className="font-bold text-slate-800">רשימה לדירוג ({rankedPlayers.length})</h3>
             </div>
             
-            <div className="bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-6 rounded-2xl border-2 border-gray-200 min-h-[200px] shadow-inner">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 min-h-[150px]">
               {rankedPlayers.length === 0 ? (
-                <p className="text-gray-500 text-center py-8 text-xl font-medium italic">אין שחקנים ברשימה. הוסף מלמטה.</p>
+                <p className="text-slate-400 text-center py-6 text-sm font-medium">אין שחקנים ברשימה. הוסף מלמטה.</p>
               ) : (
-                <DndContext 
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext 
-                    items={rankedPlayers.map(p => p.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={rankedPlayers.map(p => p.id)} strategy={verticalListSortingStrategy}>
                     {rankedPlayers.map((p, index) => (
                       <SortableItem key={p.id} player={p} index={index} onRemove={moveToUnranked} />
                     ))}
@@ -168,31 +182,30 @@ export default function RankingForm({
 
           <button 
             onClick={handleSubmit}
-            className="w-full bg-gradient-to-r from-emerald-400 to-green-600 text-white p-6 rounded-2xl font-black text-2xl hover:from-emerald-500 hover:to-green-700 flex justify-center items-center gap-3 shadow-xl hover:shadow-2xl transition-all active:scale-[0.98]"
+            className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-purple-700 flex justify-center items-center gap-2 shadow-sm transition-colors"
           >
-            <Check size={32} /> שמור דירוג
+            <Check size={20} /> שמור דירוג
           </button>
 
           {unrankedPlayers.length > 0 && (
-            <div className="mt-6 bg-rose-50 p-6 rounded-2xl border-2 border-rose-100">
-              <h3 className="font-extrabold text-rose-900 text-xl mb-4 flex items-center gap-2">
+            <div className="mt-4 border-t pt-4">
+              <h3 className="font-bold text-slate-500 mb-3 text-sm">
                 לא מכיר / לא מדרג ({unrankedPlayers.length})
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="flex flex-wrap gap-2">
                 {unrankedPlayers.map(p => (
                   <button 
                     key={p.id} 
                     onClick={() => moveToRanked(p.id)}
-                    className="flex justify-between items-center bg-white hover:bg-rose-100 border-2 border-rose-200 p-4 rounded-xl text-lg font-bold text-gray-700 hover:text-rose-900 transition-colors shadow-sm"
+                    className="flex items-center gap-1 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-full text-sm font-bold text-slate-700 transition-colors shadow-sm"
                   >
                     <span>{p.name}</span>
-                    <Plus size={24} className="text-rose-600 font-bold" />
+                    <Plus size={14} className="text-slate-400" />
                   </button>
                 ))}
               </div>
             </div>
           )}
-          
         </div>
       )}
     </div>
