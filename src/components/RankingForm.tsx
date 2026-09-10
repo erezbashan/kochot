@@ -53,9 +53,8 @@ export default function RankingForm({
 
       const loadedUnranked = otherPlayers.filter(p => !rankedIds.includes(p.id));
       
-      // If there are new players not in previous ranking, add them to ranked by default at bottom
-      setRankedPlayers([...loadedRanked, ...loadedUnranked]);
-      setUnrankedPlayers([]);
+      setRankedPlayers(loadedRanked);
+      setUnrankedPlayers(loadedUnranked);
     } else {
       // New rater - default all other players to ranked
       setRankedPlayers(players.filter(p => p.id !== raterId));
@@ -112,16 +111,16 @@ export default function RankingForm({
   if (players.length === 0) return null;
 
   return (
-    <div className="bg-white p-4 md:p-8 rounded-2xl shadow-xl" dir="rtl">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 -mx-4 md:-mx-8 -mt-4 md:-mt-8 p-6 rounded-t-2xl mb-6 text-white">
-        <h2 className="text-2xl font-bold">דירוג שחקנים</h2>
-        <p className="opacity-80 text-sm mt-1">סדר את השחקנים מהטוב ביותר למעלה, לגרוע ביותר למטה.</p>
+    <div className="bg-white p-6 md:p-10 rounded-3xl shadow-2xl" dir="rtl">
+      <div className="bg-gradient-to-r from-fuchsia-500 to-purple-600 -mx-6 md:-mx-10 -mt-6 md:-mt-10 p-8 rounded-t-3xl mb-8 text-white shadow-lg">
+        <h2 className="text-3xl md:text-4xl font-extrabold mb-2 text-white">דירוג שחקנים</h2>
+        <p className="text-fuchsia-100 text-lg font-medium">סדר את השחקנים מהטוב ביותר למעלה, לגרוע ביותר למטה.</p>
       </div>
       
-      <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
-        <label className="block text-sm font-bold text-gray-700 mb-2">מי אתה?</label>
+      <div className="mb-8 bg-purple-50 p-6 rounded-2xl border-2 border-purple-100 shadow-inner">
+        <label className="block text-xl font-bold text-purple-900 mb-3">מי אתה?</label>
         <select 
-          className="w-full border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 rounded-lg text-base bg-white" 
+          className="w-full border-2 border-purple-200 shadow-sm focus:border-purple-500 focus:ring-purple-500 p-4 rounded-xl text-xl font-bold text-gray-800 bg-white" 
           value={raterId} 
           onChange={(e) => setRaterId(e.target.value)}
         >
@@ -133,21 +132,21 @@ export default function RankingForm({
       </div>
 
       {!raterId ? (
-        <div className="text-center p-8 text-gray-400 border-2 border-dashed rounded-xl">
+        <div className="text-center p-12 text-purple-400 border-4 border-dashed border-purple-100 rounded-2xl text-2xl font-bold bg-white">
           אנא בחר את שמך למעלה כדי להתחיל לדרג
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           
           <div>
-            <div className="flex justify-between items-end mb-3">
-              <h3 className="font-bold text-lg text-gray-800">רשימה לדירוג</h3>
-              <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{rankedPlayers.length} מדורגים</span>
+            <div className="flex justify-between items-end mb-4 px-2">
+              <h3 className="font-extrabold text-2xl text-gray-800">רשימה לדירוג</h3>
+              <span className="text-lg font-bold bg-purple-200 text-purple-900 px-4 py-1.5 rounded-full shadow-sm">{rankedPlayers.length} מדורגים</span>
             </div>
             
-            <div className="bg-gray-50 p-3 md:p-4 rounded-xl border border-gray-200 min-h-[150px]">
+            <div className="bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-6 rounded-2xl border-2 border-gray-200 min-h-[200px] shadow-inner">
               {rankedPlayers.length === 0 ? (
-                <p className="text-gray-400 text-center py-4 italic">אין שחקנים ברשימה. הוסף מלמטה.</p>
+                <p className="text-gray-500 text-center py-8 text-xl font-medium italic">אין שחקנים ברשימה. הוסף מלמטה.</p>
               ) : (
                 <DndContext 
                   sensors={sensors}
@@ -169,23 +168,25 @@ export default function RankingForm({
 
           <button 
             onClick={handleSubmit}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 flex justify-center items-center gap-2 shadow-md transition-all active:scale-[0.98]"
+            className="w-full bg-gradient-to-r from-emerald-400 to-green-600 text-white p-6 rounded-2xl font-black text-2xl hover:from-emerald-500 hover:to-green-700 flex justify-center items-center gap-3 shadow-xl hover:shadow-2xl transition-all active:scale-[0.98]"
           >
-            <Check size={24} /> שמור דירוג
+            <Check size={32} /> שמור דירוג
           </button>
 
           {unrankedPlayers.length > 0 && (
-            <div className="mt-4 opacity-80">
-              <h3 className="font-bold text-gray-600 mb-3 border-t pt-4">לא מכיר / לא מדרג ({unrankedPlayers.length})</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div className="mt-6 bg-rose-50 p-6 rounded-2xl border-2 border-rose-100">
+              <h3 className="font-extrabold text-rose-900 text-xl mb-4 flex items-center gap-2">
+                לא מכיר / לא מדרג ({unrankedPlayers.length})
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {unrankedPlayers.map(p => (
                   <button 
                     key={p.id} 
                     onClick={() => moveToRanked(p.id)}
-                    className="flex justify-between items-center bg-gray-100 hover:bg-gray-200 border border-gray-300 p-2 rounded text-sm transition-colors"
+                    className="flex justify-between items-center bg-white hover:bg-rose-100 border-2 border-rose-200 p-4 rounded-xl text-lg font-bold text-gray-700 hover:text-rose-900 transition-colors shadow-sm"
                   >
                     <span>{p.name}</span>
-                    <Plus size={16} className="text-green-600" />
+                    <Plus size={24} className="text-rose-600 font-bold" />
                   </button>
                 ))}
               </div>

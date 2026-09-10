@@ -105,8 +105,8 @@ export function rebalanceTeams(teamA: Team, teamB: Team): { teamA: Team, teamB: 
     return {
       teamA: { ...teamA, players: newTeamAPlayers, totalScore: calcScore(newTeamAPlayers) },
       teamB: { ...teamB, players: newTeamBPlayers, totalScore: calcScore(newTeamBPlayers) },
-      swappedOutA: bestSwap.pA.name,
-      swappedOutB: bestSwap.pB.name
+      swappedOutA: bestSwap.pA.player.name,
+      swappedOutB: bestSwap.pB.player.name
     };
   }
   
