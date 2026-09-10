@@ -21,7 +21,7 @@ export default function GroupSettingsPanel({ group }: { group: Group }) {
           />
           <div>
             <div className="font-bold text-slate-800">הצג דירוג (Show Ranking)</div>
-            <div className="text-sm text-slate-500">אם כבוי, ציוני השחקנים וטבלת המובילים מוסתרים לחלוטין משחקנים רגילים.</div>
+            <div className="text-sm text-slate-500">אם דלוק, ציוני השחקנים וטבלת המובילים יהיו גלויים לכולם.</div>
           </div>
         </label>
 
