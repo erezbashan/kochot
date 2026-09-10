@@ -49,13 +49,20 @@ export function useKochotStore() {
   };
 
   const addRanking = (raterId: string, rankedPlayerIds: string[]) => {
+    // Remove previous ranking by this user to keep only the latest
+    const existingFiltered = rankings.filter(r => r.raterId !== raterId);
+    
     const newRanking = {
       id: Date.now().toString(),
       raterId,
       rankedPlayerIds,
       timestamp: Date.now(),
     };
-    saveRankings([...rankings, newRanking]);
+    saveRankings([...existingFiltered, newRanking]);
+  };
+
+  const getRankingForRater = (raterId: string) => {
+    return rankings.find(r => r.raterId === raterId);
   };
 
   const calculateScores = (): PlayerScore[] => {
@@ -98,6 +105,7 @@ export function useKochotStore() {
     rankings,
     addPlayer,
     addRanking,
+    getRankingForRater,
     calculateScores,
     isLoaded,
     clearAll: () => {
