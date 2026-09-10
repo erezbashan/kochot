@@ -1,10 +1,21 @@
 {
-  "hosting": {
-    "source": ".",
+  "apphosting": {
+    "backendId": "kochot",
+    "rootDir": "/",
     "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "functions"
+    ]
+  },
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "kochot-4086f.firebaseapp.com",
+      "kochot-4086f.web.app",
+      "kochot--kochot-4086f.us-central1.hosted.app"
     ]
   }
 }
