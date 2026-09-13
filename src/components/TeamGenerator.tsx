@@ -64,7 +64,9 @@ export default function TeamGenerator({ scores, showScores }: { scores: PlayerSc
     setGeneratedTeams(teams);
   };
 
-  const allAvailableScores = [...scores, ...guests];
+  const allAvailableScores = [...scores, ...guests].sort((a, b) => 
+    a.player.name.localeCompare(b.player.name, 'he')
+  );
 
   return (
     <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200" dir="rtl">
@@ -179,7 +181,7 @@ export default function TeamGenerator({ scores, showScores }: { scores: PlayerSc
                   )}
                 </div>
                 <ul className="p-2 space-y-1">
-                  {generatedTeams.teamWhite.players.map(p => (
+                  {generatedTeams.teamWhite.players.slice().sort((a, b) => a.player.name.localeCompare(b.player.name, 'he')).map(p => (
                     <li key={p.player.id} className="flex justify-between items-center text-sm p-2 bg-white rounded">
                       <span className="font-bold text-slate-700">{p.player.name}</span>
                       {showScores && <span className="font-mono text-slate-400">{p.score.toFixed(1)}</span>}
@@ -198,7 +200,7 @@ export default function TeamGenerator({ scores, showScores }: { scores: PlayerSc
                   )}
                 </div>
                 <ul className="p-2 space-y-1">
-                  {generatedTeams.teamBlack.players.map(p => (
+                  {generatedTeams.teamBlack.players.slice().sort((a, b) => a.player.name.localeCompare(b.player.name, 'he')).map(p => (
                     <li key={p.player.id} className="flex justify-between items-center text-sm p-2 bg-slate-900 rounded">
                       <span className="font-bold text-slate-200">{p.player.name}</span>
                       {showScores && <span className="font-mono text-slate-500">{p.score.toFixed(1)}</span>}
