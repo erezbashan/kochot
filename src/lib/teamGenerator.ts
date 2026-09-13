@@ -19,12 +19,20 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
+// Helper to calculate standard deviation
+const calcStdDev = (players: PlayerScore[], totalScore: number) => {
+  if (players.length === 0) return 0;
+  const mean = totalScore / players.length;
+  const variance = players.reduce((sum, p) => sum + Math.pow(p.score - mean, 2), 0) / players.length;
+  return Math.sqrt(variance);
+};
+
 export function generateTeams(selectedPlayers: PlayerScore[]): { teamWhite: Team, teamBlack: Team } {
   const N = selectedPlayers.length;
   const half = N / 2;
   
   // To avoid always giving the same teams, we will generate a bunch of random valid splits,
-  // score them based on the absolute difference between the two teams,
+  // score them based on the absolute difference between the two teams (and penalize variance differences),
   // and pick randomly from the splits that are "close enough" to the best one.
   
   const NUM_SAMPLES = 5000;
@@ -40,7 +48,16 @@ export function generateTeams(selectedPlayers: PlayerScore[]): { teamWhite: Team
     
     const whiteScore = calcScore(white);
     const blackScore = calcScore(black);
-    const diff = Math.abs(whiteScore - blackScore);
+    
+    const whiteStdDev = calcStdDev(white, whiteScore);
+    const blackStdDev = calcStdDev(black, blackScore);
+    
+    const scoreDiff = Math.abs(whiteScore - blackScore);
+    const stdDevDiff = Math.abs(whiteStdDev - blackStdDev);
+    
+    // Total score difference is the primary metric, but we add a penalty 
+    // for having drastically different talent distributions (std dev difference)
+    const diff = scoreDiff + (stdDevDiff * 0.75);
     
     if (diff < minDiff) {
       minDiff = diff;
@@ -73,7 +90,12 @@ export function generateTeams(selectedPlayers: PlayerScore[]): { teamWhite: Team
 // Rebalance by switching exactly ONE player from teamA and ONE from teamB
 // Returns the new rebalanced teams, or null if no switch improves the balance
 export function rebalanceTeams(teamA: Team, teamB: Team): { teamA: Team, teamB: Team, swappedOutA: string, swappedOutB: string } | null {
-  let currentDiff = Math.abs(teamA.totalScore - teamB.totalScore);
+  const currentStdDevA = calcStdDev(teamA.players, teamA.totalScore);
+  const currentStdDevB = calcStdDev(teamB.players, teamB.totalScore);
+  const currentScoreDiff = Math.abs(teamA.totalScore - teamB.totalScore);
+  const currentStdDevDiff = Math.abs(currentStdDevA - currentStdDevB);
+  
+  let currentDiff = currentScoreDiff + (currentStdDevDiff * 0.75);
   
   let bestSwap = null;
   let bestDiff = currentDiff;
@@ -83,9 +105,21 @@ export function rebalanceTeams(teamA: Team, teamB: Team): { teamA: Team, teamB: 
       const pA = teamA.players[i];
       const pB = teamB.players[j];
       
-      const newScoreA = teamA.totalScore - pA.score + pB.score;
-      const newScoreB = teamB.totalScore - pB.score + pA.score;
-      const newDiff = Math.abs(newScoreA - newScoreB);
+      const newTeamAPlayers = [...teamA.players];
+      const newTeamBPlayers = [...teamB.players];
+      newTeamAPlayers[i] = pB;
+      newTeamBPlayers[j] = pA;
+
+      const newScoreA = calcScore(newTeamAPlayers);
+      const newScoreB = calcScore(newTeamBPlayers);
+      
+      const newStdDevA = calcStdDev(newTeamAPlayers, newScoreA);
+      const newStdDevB = calcStdDev(newTeamBPlayers, newScoreB);
+
+      const scoreDiff = Math.abs(newScoreA - newScoreB);
+      const stdDevDiff = Math.abs(newStdDevA - newStdDevB);
+      
+      const newDiff = scoreDiff + (stdDevDiff * 0.75);
       
       if (newDiff < bestDiff) {
         bestDiff = newDiff;
