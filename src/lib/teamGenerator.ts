@@ -55,9 +55,9 @@ export function generateTeams(selectedPlayers: PlayerScore[]): { teamWhite: Team
     const scoreDiff = Math.abs(whiteScore - blackScore);
     const stdDevDiff = Math.abs(whiteStdDev - blackStdDev);
     
-    // Total score difference is the primary metric, but we add a penalty 
+    // Total score difference is the primary metric, but we add a HEAVY penalty 
     // for having drastically different talent distributions (std dev difference)
-    const diff = scoreDiff + (stdDevDiff * 0.75);
+    const diff = scoreDiff + (stdDevDiff * 1.5);
     
     if (diff < minDiff) {
       minDiff = diff;
@@ -66,8 +66,7 @@ export function generateTeams(selectedPlayers: PlayerScore[]): { teamWhite: Team
   }
   
   // Filter splits that are within a small threshold of the absolute best split found
-  // For example, within 5 points of the best difference
-  const threshold = minDiff + 5.0; 
+  const threshold = minDiff + 2.5; 
   const acceptableSplits = bestSplits.filter(s => s.diff <= threshold);
   
   // Pick a random split from the acceptable ones
