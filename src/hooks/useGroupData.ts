@@ -62,19 +62,19 @@ export function useGroupData(groupId: string) {
   }, [groupId]);
 
   const calculateScores = (): PlayerScore[] => {
-    const scoresMap = new Map<string, { totalScore: number; count: number }>();
-
-    players.forEach(p => scoresMap.set(p.id, { totalScore: 0, count: 0 }));
+    // Pass 1: Calculate raw average scores (ignoring the missing spot)
+    const pass1Map = new Map<string, { totalScore: number; count: number }>();
+    players.forEach(p => pass1Map.set(p.id, { totalScore: 0, count: 0 }));
 
     rankings.forEach(ranking => {
       const K = ranking.rankedPlayerIds.length;
-      if (K <= 1) return; // Cannot rank just 1 person
+      if (K <= 1) return; // Cannot rank just 1 person in raw calculation
 
       ranking.rankedPlayerIds.forEach((playerId: string, index: number) => {
         const R = index + 1; // 1-based rank
         const score = ((K - R) / (K - 1)) * 100;
         
-        const current = scoresMap.get(playerId);
+        const current = pass1Map.get(playerId);
         if (current) {
           current.totalScore += score;
           current.count += 1;
@@ -82,8 +82,55 @@ export function useGroupData(groupId: string) {
       });
     });
 
+    const pass1Averages = new Map<string, number>();
+    players.forEach(p => {
+      const data = pass1Map.get(p.id)!;
+      pass1Averages.set(p.id, data.count > 0 ? data.totalScore / data.count : 50);
+    });
+
+    // Pass 2: Calculate adjusted scores, where each voter "occupies" the slot closest to their Pass 1 average
+    const finalMap = new Map<string, { totalScore: number; count: number }>();
+    players.forEach(p => finalMap.set(p.id, { totalScore: 0, count: 0 }));
+
+    rankings.forEach(ranking => {
+      const K = ranking.rankedPlayerIds.length;
+      if (K === 0) return;
+
+      // Voter's estimated strength based on Pass 1
+      const voterScore = pass1Averages.get(ranking.raterId) ?? 50;
+
+      // Generate K+1 possible slots from 100 down to 0
+      const slots: number[] = [];
+      for (let j = 0; j <= K; j++) {
+        slots.push(100 * (K - j) / K);
+      }
+
+      // Find the slot closest to the voter's score
+      let bestJ = 0;
+      let minDiff = Infinity;
+      for (let j = 0; j <= K; j++) {
+        const diff = Math.abs(slots[j] - voterScore);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestJ = j;
+        }
+      }
+
+      // Remove the slot that the voter occupies
+      slots.splice(bestJ, 1);
+
+      // Distribute remaining K slots to the ranked players
+      ranking.rankedPlayerIds.forEach((playerId: string, index: number) => {
+        const current = finalMap.get(playerId);
+        if (current) {
+          current.totalScore += slots[index];
+          current.count += 1;
+        }
+      });
+    });
+
     const playerScores: PlayerScore[] = players.map(p => {
-      const data = scoresMap.get(p.id)!;
+      const data = finalMap.get(p.id)!;
       return {
         player: p,
         score: data.count > 0 ? data.totalScore / data.count : 50,
