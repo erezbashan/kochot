@@ -43,7 +43,10 @@ export function useGroupData(groupId: string) {
     });
 
     const unsubPlayers = onSnapshot(playersRef, (snapshot) => {
-      setPlayers(snapshot.docs.map(doc => doc.data() as Player));
+      const now = Date.now();
+      const allPlayers = snapshot.docs.map(doc => doc.data() as Player);
+      const activePlayers = allPlayers.filter(p => !p.isGuest || (p.expiresAt && p.expiresAt > now));
+      setPlayers(activePlayers);
       isPlayersLoaded = true;
       checkLoaded();
     });
@@ -61,10 +64,13 @@ export function useGroupData(groupId: string) {
     };
   }, [groupId]);
 
+  const normalPlayers = players.filter(p => !p.isGuest);
+  const guestPlayers = players.filter(p => p.isGuest);
+
   const calculateScores = (): PlayerScore[] => {
     // Pass 1: Calculate raw average scores (ignoring the missing spot)
     const pass1Map = new Map<string, { totalScore: number; count: number }>();
-    players.forEach(p => pass1Map.set(p.id, { totalScore: 0, count: 0 }));
+    normalPlayers.forEach(p => pass1Map.set(p.id, { totalScore: 0, count: 0 }));
 
     rankings.forEach(ranking => {
       const K = ranking.rankedPlayerIds.length;
@@ -83,14 +89,14 @@ export function useGroupData(groupId: string) {
     });
 
     const pass1Averages = new Map<string, number>();
-    players.forEach(p => {
+    normalPlayers.forEach(p => {
       const data = pass1Map.get(p.id)!;
       pass1Averages.set(p.id, data.count > 0 ? data.totalScore / data.count : 50);
     });
 
     // Pass 2: Calculate adjusted scores, where each voter "occupies" the slot closest to their Pass 1 average
     const finalMap = new Map<string, { totalScore: number; count: number }>();
-    players.forEach(p => finalMap.set(p.id, { totalScore: 0, count: 0 }));
+    normalPlayers.forEach(p => finalMap.set(p.id, { totalScore: 0, count: 0 }));
 
     rankings.forEach(ranking => {
       const K = ranking.rankedPlayerIds.length;
@@ -129,7 +135,7 @@ export function useGroupData(groupId: string) {
       });
     });
 
-    const playerScores: PlayerScore[] = players.map(p => {
+    const normalScores: PlayerScore[] = normalPlayers.map(p => {
       const data = finalMap.get(p.id)!;
       return {
         player: p,
@@ -138,12 +144,18 @@ export function useGroupData(groupId: string) {
       };
     });
 
-    return playerScores.sort((a, b) => b.score - a.score);
+    const guestScores: PlayerScore[] = guestPlayers.map(p => ({
+      player: p,
+      score: p.guestScore ?? 50,
+      rankingsCount: 0
+    }));
+
+    return [...normalScores.sort((a, b) => b.score - a.score), ...guestScores];
   };
 
   const getRankingForRater = (raterId: string) => {
     return rankings.find(r => r.raterId === raterId);
   };
 
-  return { group, players, rankings, loading, calculateScores, getRankingForRater };
+  return { group, players: normalPlayers, allActivePlayers: players, rankings, loading, calculateScores, getRankingForRater };
 }

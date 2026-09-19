@@ -4,12 +4,11 @@ import { PlayerScore } from '@/hooks/useGroupData';
 import { generateTeams, Team } from '@/lib/teamGenerator';
 import { Users, UserPlus, Zap, Check, X } from 'lucide-react';
 
-export default function TeamGenerator({ scores, showScores }: { scores: PlayerScore[], showScores: boolean }) {
+export default function TeamGenerator({ scores, showScores, onAddGuest, onRemoveGuest }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   // Guests feature
-  const [guests, setGuests] = useState<PlayerScore[]>([]);
-  const [guestName, setGuestName] = useState('');
+    const [guestName, setGuestName] = useState('');
   const [guestScore, setGuestScore] = useState('50');
 
   const [generatedTeams, setGeneratedTeams] = useState<{teamWhite: Team, teamBlack: Team} | null>(null);
@@ -27,30 +26,21 @@ export default function TeamGenerator({ scores, showScores }: { scores: PlayerSc
   const addGuest = (e: React.FormEvent) => {
     e.preventDefault();
     if (guestName.trim() && !isNaN(Number(guestScore))) {
-      const newGuest: PlayerScore = {
-        player: { id: `guest-${Date.now()}`, name: `${guestName.trim()} (אורח)`, claimedByUserId: null },
-        score: Number(guestScore),
-        rankingsCount: 0
-      };
-      setGuests([...guests, newGuest]);
+      onAddGuest(guestName.trim(), Number(guestScore));
       setGuestName('');
       setGuestScore('50');
-      
-      const newSet = new Set(selectedIds);
-      newSet.add(newGuest.player.id);
-      setSelectedIds(newSet);
     }
   };
 
   const removeGuest = (id: string) => {
-    setGuests(guests.filter(g => g.player.id !== id));
+    onRemoveGuest(id);
     const newSet = new Set(selectedIds);
     newSet.delete(id);
     setSelectedIds(newSet);
   };
 
   const handleGenerate = () => {
-    const allScores = [...scores, ...guests];
+    const allScores = scores;
     const selectedPlayers = allScores.filter(s => selectedIds.has(s.player.id));
     
     if (selectedPlayers.length === 0) {
@@ -64,7 +54,7 @@ export default function TeamGenerator({ scores, showScores }: { scores: PlayerSc
     setGeneratedTeams(teams);
   };
 
-  const allAvailableScores = [...scores, ...guests].sort((a, b) => 
+  const allAvailableScores = scores.filter(s => !s.player.isGuest).sort((a, b) => 
     a.player.name.localeCompare(b.player.name, 'he')
   );
 
@@ -102,9 +92,9 @@ export default function TeamGenerator({ scores, showScores }: { scores: PlayerSc
             </button>
           </div>
         </form>
-        {guests.length > 0 && (
+        {(scores.filter(s => s.player.isGuest).length > 0) && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {guests.map(g => (
+            {scores.filter(s => s.player.isGuest).map(g => (
               <span key={g.player.id} className="bg-white border border-slate-300 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
                 {g.player.name} {showScores && <><span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span></>}
                 <button onClick={() => removeGuest(g.player.id)} className="text-slate-400 hover:text-red-500 ml-1">

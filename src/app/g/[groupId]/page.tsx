@@ -8,7 +8,7 @@ import TeamGenerator from '@/components/TeamGenerator';
 import ManualRebalance from '@/components/ManualRebalance';
 import GroupSettingsPanel from '@/components/GroupSettingsPanel';
 import AuthModal from '@/components/AuthModal';
-import { addPlayerToGroup, removePlayerFromGroup, submitRanking, claimPlayer } from '@/lib/firestore';
+import { addPlayerToGroup, removePlayerFromGroup, addGuestToGroup, submitRanking, claimPlayer } from '@/lib/firestore';
 import { useState, use } from 'react';
 import { Users, Trophy, ClipboardList, RefreshCw, Settings, LogIn, Share2, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -145,7 +145,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
         </div>
 
         <main className="pb-20">
-          {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} />}
+          {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} />}
           {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} />}
           {activeTab === 'players_rank' && (
             <RankingForm 

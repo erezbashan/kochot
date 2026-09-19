@@ -21,6 +21,9 @@ export type Player = {
   id: string;
   name: string;
   claimedByUserId: string | null;
+  isGuest?: boolean;
+  guestScore?: number;
+  expiresAt?: number;
 };
 
 export type Ranking = {
@@ -59,6 +62,18 @@ export async function addPlayerToGroup(groupId: string, name: string): Promise<v
     id: playerRef.id,
     name,
     claimedByUserId: null
+  });
+}
+
+export async function addGuestToGroup(groupId: string, name: string, score: number): Promise<void> {
+  const playerRef = doc(collection(db, `groups/${groupId}/players`));
+  await setDoc(playerRef, {
+    id: playerRef.id,
+    name: `${name} (אורח)`,
+    claimedByUserId: null,
+    isGuest: true,
+    guestScore: score,
+    expiresAt: Date.now() + 12 * 60 * 60 * 1000 // 12 hours from now
   });
 }
 
