@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PlayerScore } from '@/hooks/useGroupData';
-import { Users, Zap, Check, ArrowDownUp, X } from 'lucide-react';
+import { Users, Zap, Check, ArrowDownUp } from 'lucide-react';
 
 const calcStdDev = (players: PlayerScore[], totalScore: number) => {
   if (players.length === 0) return 0;
@@ -12,6 +12,8 @@ const calcStdDev = (players: PlayerScore[], totalScore: number) => {
 export default function BenchSubstitutions({ 
   scores, 
   showScores, 
+  onAddGuest, 
+  onRemoveGuest, 
   whiteTeamIds, 
   blackTeamIds, 
   onChangeTeams 
@@ -30,21 +32,45 @@ export default function BenchSubstitutions({
   const allAvailableScores = scores;
   const whiteTeam = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id));
   const blackTeam = allAvailableScores.filter(s => blackTeamIds.has(s.player.id));
-  const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id));
+  const benchComingUp = allAvailableScores.filter(s => selectedBenchIds.has(s.player.id));
+  const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id) && !selectedBenchIds.has(s.player.id));
 
-  const removeFromWhite = (id: string) => {
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('playerId', id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, target: 'white' | 'black' | 'coming_up' | 'unassigned') => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('playerId');
+    if (!id) return;
+    
     const newWhite = new Set(whiteTeamIds);
-    newWhite.delete(id);
-    onChangeTeams(newWhite, blackTeamIds);
-  };
-
-  const removeFromBlack = (id: string) => {
     const newBlack = new Set(blackTeamIds);
+    const newSelectedBench = new Set(selectedBenchIds);
+    
+    // Remove from everywhere first
+    newWhite.delete(id);
     newBlack.delete(id);
-    onChangeTeams(whiteTeamIds, newBlack);
+    newSelectedBench.delete(id);
+
+    // Add to target
+    if (target === 'white') newWhite.add(id);
+    else if (target === 'black') newBlack.add(id);
+    else if (target === 'coming_up') newSelectedBench.add(id);
+    // if unassigned, it just stays removed from everything
+
+    onChangeTeams(newWhite, newBlack);
+    setSelectedBenchIds(newSelectedBench);
   };
 
-  const toggleBenchPlayer = (id: string) => {
+  // Clicking toggles between unassigned and coming_up
+  const handlePlayerClick = (id: string) => {
+    if (whiteTeamIds.has(id) || blackTeamIds.has(id)) return; // Don't click to toggle if in team, force drag
+    
     const newSet = new Set(selectedBenchIds);
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
@@ -52,28 +78,25 @@ export default function BenchSubstitutions({
   };
 
   const handleSuggest = () => {
-    const benchPlayers = unassigned.filter(s => selectedBenchIds.has(s.player.id));
-    if (benchPlayers.length === 0) return;
+    if (benchComingUp.length === 0) return;
 
-    const totalSize = whiteTeam.length + blackTeam.length + benchPlayers.length;
-    const targetSizeWhite = Math.ceil(totalSize / 2);
-    const targetSizeBlack = Math.floor(totalSize / 2); // sizes could be swapped, we'll check both
+    const totalSize = whiteTeam.length + blackTeam.length + benchComingUp.length;
 
     let bestDiff = Infinity;
     let bestWhite: PlayerScore[] = [];
     let bestBlack: PlayerScore[] = [];
 
-    const numCombinations = Math.pow(2, benchPlayers.length);
+    const numCombinations = Math.pow(2, benchComingUp.length);
 
     for (let i = 0; i < numCombinations; i++) {
       const currentWhite = [...whiteTeam];
       const currentBlack = [...blackTeam];
 
-      for (let j = 0; j < benchPlayers.length; j++) {
+      for (let j = 0; j < benchComingUp.length; j++) {
         if ((i & (1 << j)) !== 0) {
-          currentWhite.push(benchPlayers[j]);
+          currentWhite.push(benchComingUp[j]);
         } else {
-          currentBlack.push(benchPlayers[j]);
+          currentBlack.push(benchComingUp[j]);
         }
       }
 
@@ -97,8 +120,8 @@ export default function BenchSubstitutions({
     }
 
     if (bestDiff !== Infinity) {
-      const addedToWhite = benchPlayers.filter(p => bestWhite.some(w => w.player.id === p.player.id));
-      const addedToBlack = benchPlayers.filter(p => bestBlack.some(b => b.player.id === p.player.id));
+      const addedToWhite = benchComingUp.filter(p => bestWhite.some(w => w.player.id === p.player.id));
+      const addedToBlack = benchComingUp.filter(p => bestBlack.some(b => b.player.id === p.player.id));
       
       setSuggestion({
         addedToWhite,
@@ -114,97 +137,107 @@ export default function BenchSubstitutions({
       <div className="mb-6 border-b pb-4">
         <h2 className="text-xl md:text-2xl font-bold text-slate-800">עליה מהספסל</h2>
         <p className="text-sm text-slate-500 mt-1">
-          בחר שחקנים מהספסל והמערכת תשבץ אותם אוטומטית לקבוצות הקיימות.
+          גרור שחקנים בין הקבוצות או לסל "עולים מהספסל", והמערכת תשבץ אותם הוגן.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-          <h3 className="font-bold text-slate-700 mb-3 flex items-center justify-between">
+        <div 
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, 'white')}
+          className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-4 min-h-[150px]"
+        >
+          <h4 className="font-bold text-slate-800 mb-3 flex items-center justify-between border-b pb-2">
             <span>קבוצה לבנה</span>
             <span className="text-xs bg-slate-200 px-2 py-1 rounded-full">{whiteTeam.length} שחקנים</span>
-          </h3>
-          <div className="flex flex-col gap-2">
+          </h4>
+          <div className="flex flex-wrap gap-2">
             {whiteTeam.map(s => (
-              <div key={s.player.id} className="bg-white p-2 border rounded-lg flex justify-between items-center text-sm font-semibold text-slate-700 group">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => removeFromWhite(s.player.id)} className="text-slate-300 hover:text-red-500 transition-colors p-1 -ml-1 rounded-full hover:bg-red-50">
-                    <X size={14} />
-                  </button>
-                  {s.player.name}
-                </div>
-                {showScores && <span className="text-blue-600">{s.score.toFixed(1)}</span>}
+              <div
+                key={s.player.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, s.player.id)}
+                className="bg-white border border-slate-300 px-3 py-2 rounded-lg text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing hover:bg-slate-50"
+              >
+                {s.player.name}
               </div>
             ))}
-            {whiteTeam.length === 0 && <div className="text-sm text-slate-400 text-center py-4">אין שחקנים</div>}
+            {whiteTeam.length === 0 && <div className="text-sm text-slate-400 w-full text-center py-4">גרור לכאן</div>}
           </div>
         </div>
 
-        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-          <h3 className="font-bold text-white mb-3 flex items-center justify-between">
+        <div 
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, 'black')}
+          className="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 min-h-[150px]"
+        >
+          <h4 className="font-bold text-white mb-3 flex items-center justify-between border-b border-slate-700 pb-2">
             <span>קבוצה שחורה</span>
             <span className="text-xs bg-slate-700 px-2 py-1 rounded-full">{blackTeam.length} שחקנים</span>
-          </h3>
-          <div className="flex flex-col gap-2">
+          </h4>
+          <div className="flex flex-wrap gap-2">
             {blackTeam.map(s => (
-              <div key={s.player.id} className="bg-slate-700 p-2 border border-slate-600 rounded-lg flex justify-between items-center text-sm font-semibold text-white group">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => removeFromBlack(s.player.id)} className="text-slate-400 hover:text-red-400 transition-colors p-1 -ml-1 rounded-full hover:bg-slate-600">
-                    <X size={14} />
-                  </button>
-                  {s.player.name}
-                </div>
-                {showScores && <span className="text-blue-300">{s.score.toFixed(1)}</span>}
+              <div
+                key={s.player.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, s.player.id)}
+                className="bg-black text-white border border-slate-600 px-3 py-2 rounded-lg text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing hover:bg-gray-800"
+              >
+                {s.player.name}
               </div>
             ))}
-            {blackTeam.length === 0 && <div className="text-sm text-slate-400 text-center py-4">אין שחקנים</div>}
+            {blackTeam.length === 0 && <div className="text-sm text-slate-400 w-full text-center py-4">גרור לכאן</div>}
           </div>
         </div>
       </div>
 
-      <div className="mb-6">
-        <h3 className="font-bold text-slate-700 mb-4 flex items-center justify-between">
-          מי עולה מהספסל?
-          <span className="text-sm font-normal text-slate-500">{selectedBenchIds.size} נבחרו</span>
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {unassigned.map(s => {
-            const isSelected = selectedBenchIds.has(s.player.id);
-            return (
-              <button
-                key={s.player.id}
-                onClick={() => toggleBenchPlayer(s.player.id)}
-                className={`p-3 rounded-xl flex flex-col justify-center items-center transition-all border-2 h-16 relative overflow-hidden ${
-                  isSelected 
-                    ? 'bg-indigo-500 border-indigo-600 text-white shadow-sm' 
-                    : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
-                }`}
-              >
-                {isSelected && (
-                  <div className="absolute top-1 right-1">
-                    <Check size={14} className="text-indigo-100" />
-                  </div>
-                )}
-                <span className="font-bold text-sm text-center leading-tight">
-                  {s.player.name}
-                </span>
-                {showScores && (
-                  <span className={`text-xs mt-1 font-bold ${isSelected ? 'text-indigo-100' : 'text-blue-600'}`}>
-                    {s.score.toFixed(1)}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-          {unassigned.length === 0 && (
-            <div className="col-span-full text-center py-8 text-slate-400 border-2 border-dashed rounded-xl">
-              אין שחקנים פנויים בספסל
+      <div 
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleDrop(e, 'coming_up')}
+        className="bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl p-4 mb-6 min-h-[120px]"
+      >
+        <h4 className="font-bold text-indigo-800 mb-3 flex items-center justify-between border-b border-indigo-100 pb-2">
+          מי עולה מהספסל? (גרור לכאן או לחץ על שחקן למטה)
+          <span className="text-xs bg-indigo-100 px-2 py-1 rounded-full">{benchComingUp.length} נבחרו</span>
+        </h4>
+        <div className="flex flex-wrap gap-2">
+          {benchComingUp.map(s => (
+            <div
+              key={s.player.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, s.player.id)}
+              onClick={() => handlePlayerClick(s.player.id)}
+              className="bg-indigo-500 text-white border border-indigo-600 px-3 py-2 rounded-lg text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing hover:bg-indigo-600"
+            >
+              {s.player.name} {showScores && <span className="text-xs text-indigo-200 ml-1">{s.score.toFixed(1)}</span>}
             </div>
-          )}
+          ))}
+          {benchComingUp.length === 0 && <div className="text-sm text-indigo-300 w-full text-center py-4">גרור שחקנים לכאן</div>}
         </div>
       </div>
 
-      {selectedBenchIds.size > 0 && (
+      <div 
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleDrop(e, 'unassigned')}
+        className="mt-6 border-t pt-4"
+      >
+        <h4 className="text-sm font-bold text-slate-500 mb-3">שאר הספסל:</h4>
+        <div className="flex flex-wrap gap-2 min-h-[50px]">
+          {unassigned.map(s => (
+            <div
+              key={s.player.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, s.player.id)}
+              onClick={() => handlePlayerClick(s.player.id)}
+              className="bg-white border border-slate-200 px-3 py-2 rounded-lg text-sm text-slate-700 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-sm"
+            >
+              {s.player.name} {showScores && <span className="text-xs text-slate-400 ml-1">{s.score.toFixed(1)}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {benchComingUp.length > 0 && (
         <div className="flex justify-center mt-8">
           <button
             onClick={handleSuggest}
@@ -275,4 +308,3 @@ export default function BenchSubstitutions({
     </div>
   );
 }
-
