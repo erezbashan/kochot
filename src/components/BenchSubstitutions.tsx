@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PlayerScore } from '@/hooks/useGroupData';
-import { Users, Zap, Check, ArrowDownUp } from 'lucide-react';
+import { Users, Zap, Check, ArrowDownUp, X, UserPlus } from 'lucide-react';
 
 const calcStdDev = (players: PlayerScore[], totalScore: number) => {
   if (players.length === 0) return 0;
@@ -27,7 +27,17 @@ export default function BenchSubstitutions({
   onChangeTeams: (white: Set<string>, black: Set<string>) => void 
 }) {
   const [selectedBenchIds, setSelectedBenchIds] = useState<Set<string>>(new Set());
+  const [guestName, setGuestName] = useState('');
+  const [guestScore, setGuestScore] = useState('');
   const [suggestion, setSuggestion] = useState<{addedToWhite: PlayerScore[], addedToBlack: PlayerScore[], newWhite: PlayerScore[], newBlack: PlayerScore[]} | null>(null);
+
+  const addGuest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim() || !guestScore) return;
+    onAddGuest?.(guestName.trim(), Number(guestScore));
+    setGuestName('');
+    setGuestScore('');
+  };
 
   const allAvailableScores = scores;
   const whiteTeam = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
@@ -163,6 +173,16 @@ export default function BenchSubstitutions({
         </p>
       </div>
 
+      {benchComingUp.length > 0 && (
+        <button
+          onClick={handleSuggest}
+          className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-blue-700 flex justify-center items-center gap-2 shadow-sm mb-6 transition-colors"
+        >
+          <ArrowDownUp size={20} />
+          הצע חלוקה הוגנת לעולים מהספסל
+        </button>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div 
           onDragOver={handleDragOver}
@@ -261,17 +281,49 @@ export default function BenchSubstitutions({
         </div>
       </div>
 
-      {benchComingUp.length > 0 && (
-        <div className="flex justify-center mt-8">
-          <button
-            onClick={handleSuggest}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full shadow-md transition-all flex items-center gap-2 transform hover:scale-105"
-          >
-            <ArrowDownUp size={20} />
-            המלץ חלוקה הוגנת
-          </button>
-        </div>
-      )}
+      
+
+            {/* Guests Section */}
+      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200 mt-8">
+        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
+          <UserPlus size={16} />
+          הוספת אורח
+        </h3>
+        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
+          <input 
+            type="text" 
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder="שם האורח"
+            className="flex-1 border border-slate-300 p-2 rounded-lg text-sm"
+          />
+          <div className="flex gap-2">
+            <input 
+              type="number" 
+              value={guestScore}
+              onChange={(e) => setGuestScore(e.target.value)}
+              placeholder="ציון"
+              className="w-20 border border-slate-300 p-2 rounded-lg text-sm text-center"
+              min="0" max="100"
+            />
+            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+              הוסף
+            </button>
+          </div>
+        </form>
+        {(scores.filter(s => s.player.isGuest).length > 0) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {scores.filter(s => s.player.isGuest).map(g => (
+              <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
+                {g.player.name} {showScores && <><span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span></>}
+                <button onClick={() => onRemoveGuest?.(g.player.id)} className="text-slate-400 hover:text-red-500 ml-1">
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {suggestion && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">

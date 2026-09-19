@@ -202,6 +202,11 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
                 </ul>
               </div>
             </div>
+            <div className="p-4 bg-slate-50 border-t mt-auto">
+              <button onClick={() => setGeneratedTeams(null)} className="w-full bg-slate-200 text-slate-800 p-2 rounded-lg font-bold hover:bg-slate-300">
+                סגור
+              </button>
+            </div>
           </div>
         </div>
       )}
