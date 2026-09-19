@@ -30,10 +30,10 @@ export default function BenchSubstitutions({
   const [suggestion, setSuggestion] = useState<{addedToWhite: PlayerScore[], addedToBlack: PlayerScore[], newWhite: PlayerScore[], newBlack: PlayerScore[]} | null>(null);
 
   const allAvailableScores = scores;
-  const whiteTeam = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id));
-  const blackTeam = allAvailableScores.filter(s => blackTeamIds.has(s.player.id));
-  const benchComingUp = allAvailableScores.filter(s => selectedBenchIds.has(s.player.id));
-  const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id) && !selectedBenchIds.has(s.player.id));
+  const whiteTeam = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
+  const blackTeam = allAvailableScores.filter(s => blackTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
+  const benchComingUp = allAvailableScores.filter(s => selectedBenchIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
+  const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id) && !selectedBenchIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData('playerId', id);
@@ -159,7 +159,7 @@ export default function BenchSubstitutions({
       <div className="mb-6 border-b pb-4">
         <h2 className="text-xl md:text-2xl font-bold text-slate-800">עליה מהספסל</h2>
         <p className="text-sm text-slate-500 mt-1">
-          גרור (או לחץ בטלפון הנייד) שחקנים בין הקבוצות או לסל "עולים מהספסל", והמערכת תשבץ אותם הוגן.
+          <span className="hidden md:inline">גרור שחקנים בין הקבוצות או לסל "עולים מהספסל", והמערכת תשבץ אותם הוגן.</span><span className="md:hidden">לחץ על שחקנים כדי להעביר אותם. המערכת יכולה גם לשבץ הוגן.</span>
         </p>
       </div>
 
@@ -170,7 +170,7 @@ export default function BenchSubstitutions({
           className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-4 min-h-[150px]"
         >
           <h4 className="font-bold text-slate-800 mb-3 flex items-center justify-between border-b pb-2">
-            <span>קבוצה לבנה</span>
+            <span>קבוצה לבנה <span className="md:hidden text-xs font-normal text-slate-500">(לחץ לשינוי לשחור)</span></span>
             <span className="text-xs bg-slate-200 px-2 py-1 rounded-full">{whiteTeam.length} שחקנים</span>
           </h4>
           <div className="flex flex-wrap gap-2">
@@ -179,6 +179,7 @@ export default function BenchSubstitutions({
                 key={s.player.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, s.player.id)}
+                onClick={() => handlePlayerClick(s.player.id)}
                 className="bg-white border border-slate-300 px-3 py-2 rounded-lg text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing hover:bg-slate-50"
               >
                 {s.player.name}
@@ -194,7 +195,7 @@ export default function BenchSubstitutions({
           className="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 min-h-[150px]"
         >
           <h4 className="font-bold text-white mb-3 flex items-center justify-between border-b border-slate-700 pb-2">
-            <span>קבוצה שחורה</span>
+            <span>קבוצה שחורה <span className="md:hidden text-xs font-normal text-slate-400">(לחץ לספסל)</span></span>
             <span className="text-xs bg-slate-700 px-2 py-1 rounded-full">{blackTeam.length} שחקנים</span>
           </h4>
           <div className="flex flex-wrap gap-2">
@@ -203,6 +204,7 @@ export default function BenchSubstitutions({
                 key={s.player.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, s.player.id)}
+                onClick={() => handlePlayerClick(s.player.id)}
                 className="bg-black text-white border border-slate-600 px-3 py-2 rounded-lg text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing hover:bg-gray-800"
               >
                 {s.player.name}
@@ -219,7 +221,7 @@ export default function BenchSubstitutions({
         className="bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl p-4 mb-6 min-h-[120px]"
       >
         <h4 className="font-bold text-indigo-800 mb-3 flex items-center justify-between border-b border-indigo-100 pb-2">
-          מי עולה מהספסל? (גרור לכאן או לחץ על שחקן למטה)
+          <span className="hidden md:inline">מי עולה מהספסל? (גרור לכאן)</span><span className="md:hidden">מי עולה מהספסל? (לחץ ללבן)</span>
           <span className="text-xs bg-indigo-100 px-2 py-1 rounded-full">{benchComingUp.length} נבחרו</span>
         </h4>
         <div className="flex flex-wrap gap-2">
@@ -243,7 +245,7 @@ export default function BenchSubstitutions({
         onDrop={(e) => handleDrop(e, 'unassigned')}
         className="mt-6 border-t pt-4"
       >
-        <h4 className="text-sm font-bold text-slate-500 mb-3">שאר הספסל (גרור או לחץ):</h4>
+        <h4 className="text-sm font-bold text-slate-500 mb-3"><span className="hidden md:inline">שאר הספסל (גרור לעולים מהספסל):</span><span className="md:hidden">שאר הספסל (לחץ להעברה לעולים):</span></h4>
         <div className="flex flex-wrap gap-2 min-h-[50px]">
           {unassigned.map(s => (
             <div

@@ -82,8 +82,8 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
   };
 
   const handleRebalance = () => {
-    const whitePlayers = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id));
-    const blackPlayers = allAvailableScores.filter(s => blackTeamIds.has(s.player.id));
+    const whitePlayers = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
+    const blackPlayers = allAvailableScores.filter(s => blackTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
 
     if (whitePlayers.length === 0 || blackPlayers.length === 0) {
       return toast.error('יש להוסיף שחקנים לשתי הקבוצות.');
@@ -138,7 +138,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
     }
   };
 
-  const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id));
+  const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
   const whitePlayers = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id));
   const blackPlayers = allAvailableScores.filter(s => blackTeamIds.has(s.player.id));
 
@@ -165,7 +165,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
           onDrop={(e) => handleDrop(e, 'white')}
           className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-4 min-h-[150px]"
         >
-          <h4 className="font-bold text-slate-800 mb-2 border-b pb-2">קבוצה לבנה ({whitePlayers.length})</h4>
+          <h4 className="font-bold text-slate-800 mb-2 border-b pb-2">קבוצה לבנה ({whitePlayers.length}) <span className="md:hidden text-xs font-normal text-slate-500">(לחץ להעברה לשחור)</span></h4>
           <div className="flex flex-wrap gap-2">
             {whitePlayers.map(s => (
               <div
@@ -187,7 +187,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
           onDrop={(e) => handleDrop(e, 'black')}
           className="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 min-h-[150px]"
         >
-          <h4 className="font-bold text-white mb-2 border-b border-slate-700 pb-2">קבוצה שחורה ({blackPlayers.length})</h4>
+          <h4 className="font-bold text-white mb-2 border-b border-slate-700 pb-2">קבוצה שחורה ({blackPlayers.length}) <span className="md:hidden text-xs font-normal text-slate-400">(לחץ להעברה לספסל)</span></h4>
           <div className="flex flex-wrap gap-2">
             {blackPlayers.map(s => (
               <div
@@ -209,7 +209,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
         onDrop={(e) => handleDrop(e, 'unassigned')}
         className="mt-6 border-t pt-4"
       >
-        <h4 className="text-sm font-bold text-slate-500 mb-3">שחקנים לא משובצים (גרור לקבוצות או לחץ):</h4>
+        <h4 className="text-sm font-bold text-slate-500 mb-3"><span className="hidden md:inline">שחקנים לא משובצים (גרור לקבוצות):</span><span className="md:hidden">שחקנים לא משובצים (לחץ להעברה ללבן):</span></h4>
         <div className="flex flex-wrap gap-2">
           {unassigned.map(s => (
             <div
