@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PlayerScore } from '@/hooks/useGroupData';
-import { Users, Zap, Check, ArrowDownUp } from 'lucide-react';
+import { Users, Zap, Check, ArrowDownUp, X } from 'lucide-react';
 
 const calcStdDev = (players: PlayerScore[], totalScore: number) => {
   if (players.length === 0) return 0;
@@ -25,11 +25,24 @@ export default function BenchSubstitutions({
   onChangeTeams: (white: Set<string>, black: Set<string>) => void 
 }) {
   const [selectedBenchIds, setSelectedBenchIds] = useState<Set<string>>(new Set());
+  const [suggestion, setSuggestion] = useState<{addedToWhite: PlayerScore[], addedToBlack: PlayerScore[], newWhite: PlayerScore[], newBlack: PlayerScore[]} | null>(null);
 
   const allAvailableScores = scores;
   const whiteTeam = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id));
   const blackTeam = allAvailableScores.filter(s => blackTeamIds.has(s.player.id));
   const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id));
+
+  const removeFromWhite = (id: string) => {
+    const newWhite = new Set(whiteTeamIds);
+    newWhite.delete(id);
+    onChangeTeams(newWhite, blackTeamIds);
+  };
+
+  const removeFromBlack = (id: string) => {
+    const newBlack = new Set(blackTeamIds);
+    newBlack.delete(id);
+    onChangeTeams(whiteTeamIds, newBlack);
+  };
 
   const toggleBenchPlayer = (id: string) => {
     const newSet = new Set(selectedBenchIds);
@@ -84,11 +97,15 @@ export default function BenchSubstitutions({
     }
 
     if (bestDiff !== Infinity) {
-      onChangeTeams(
-        new Set(bestWhite.map(p => p.player.id)),
-        new Set(bestBlack.map(p => p.player.id))
-      );
-      setSelectedBenchIds(new Set()); // clear selection
+      const addedToWhite = benchPlayers.filter(p => bestWhite.some(w => w.player.id === p.player.id));
+      const addedToBlack = benchPlayers.filter(p => bestBlack.some(b => b.player.id === p.player.id));
+      
+      setSuggestion({
+        addedToWhite,
+        addedToBlack,
+        newWhite: bestWhite,
+        newBlack: bestBlack
+      });
     }
   };
 
@@ -109,8 +126,13 @@ export default function BenchSubstitutions({
           </h3>
           <div className="flex flex-col gap-2">
             {whiteTeam.map(s => (
-              <div key={s.player.id} className="bg-white p-2 border rounded-lg flex justify-between items-center text-sm font-semibold text-slate-700">
-                {s.player.name}
+              <div key={s.player.id} className="bg-white p-2 border rounded-lg flex justify-between items-center text-sm font-semibold text-slate-700 group">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => removeFromWhite(s.player.id)} className="text-slate-300 hover:text-red-500 transition-colors p-1 -ml-1 rounded-full hover:bg-red-50">
+                    <X size={14} />
+                  </button>
+                  {s.player.name}
+                </div>
                 {showScores && <span className="text-blue-600">{s.score.toFixed(1)}</span>}
               </div>
             ))}
@@ -125,8 +147,13 @@ export default function BenchSubstitutions({
           </h3>
           <div className="flex flex-col gap-2">
             {blackTeam.map(s => (
-              <div key={s.player.id} className="bg-slate-700 p-2 border border-slate-600 rounded-lg flex justify-between items-center text-sm font-semibold text-white">
-                {s.player.name}
+              <div key={s.player.id} className="bg-slate-700 p-2 border border-slate-600 rounded-lg flex justify-between items-center text-sm font-semibold text-white group">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => removeFromBlack(s.player.id)} className="text-slate-400 hover:text-red-400 transition-colors p-1 -ml-1 rounded-full hover:bg-slate-600">
+                    <X size={14} />
+                  </button>
+                  {s.player.name}
+                </div>
                 {showScores && <span className="text-blue-300">{s.score.toFixed(1)}</span>}
               </div>
             ))}
@@ -188,6 +215,64 @@ export default function BenchSubstitutions({
           </button>
         </div>
       )}
+
+      {suggestion && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative">
+            <h3 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-4 text-center">המלצת חלוקה</h3>
+            
+            <div className="space-y-6 mb-8">
+              {suggestion.addedToWhite.length > 0 && (
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <h4 className="font-bold text-slate-700 mb-2">עולים לקבוצה הלבנה:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestion.addedToWhite.map(p => (
+                      <span key={p.player.id} className="bg-white px-3 py-1.5 rounded-lg border shadow-sm font-semibold text-slate-800">{p.player.name}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {suggestion.addedToBlack.length > 0 && (
+                <div className="bg-slate-900 p-4 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-white mb-2">עולים לקבוצה השחורה:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestion.addedToBlack.map(p => (
+                      <span key={p.player.id} className="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600 shadow-sm font-semibold text-white">{p.player.name}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {suggestion.addedToWhite.length === 0 && suggestion.addedToBlack.length === 0 && (
+                <div className="text-center text-slate-500 py-4">אין שינויים</div>
+              )}
+            </div>
+            
+            <div className="flex gap-4">
+              <button 
+                onClick={() => {
+                  onChangeTeams(
+                    new Set(suggestion.newWhite.map(p => p.player.id)),
+                    new Set(suggestion.newBlack.map(p => p.player.id))
+                  );
+                  setSelectedBenchIds(new Set());
+                  setSuggestion(null);
+                }}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-colors"
+              >
+                אשר חלוקה
+              </button>
+              <button 
+                onClick={() => setSuggestion(null)}
+                className="flex-1 bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 font-bold py-3 rounded-xl shadow-sm transition-colors"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
