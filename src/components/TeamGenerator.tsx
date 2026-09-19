@@ -54,7 +54,7 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
     setGeneratedTeams(teams);
   };
 
-  const allAvailableScores = scores.filter(s => !s.player.isGuest).sort((a, b) => 
+  const allAvailableScores = scores.slice().sort((a, b) => 
     a.player.name.localeCompare(b.player.name, 'he')
   );
 
