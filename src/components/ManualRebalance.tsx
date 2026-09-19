@@ -4,13 +4,12 @@ import { rebalanceTeams, Team } from '@/lib/teamGenerator';
 import { RefreshCw, ArrowLeftRight, CheckCircle2, UserPlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function ManualRebalance({ scores, showScores }: { scores: PlayerScore[], showScores: boolean }) {
+export default function ManualRebalance({ scores, showScores, onAddGuest, onRemoveGuest }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void }) {
   const [whiteTeamIds, setWhiteTeamIds] = useState<Set<string>>(new Set());
   const [blackTeamIds, setBlackTeamIds] = useState<Set<string>>(new Set());
   
   // Guests feature
-  const [guests, setGuests] = useState<PlayerScore[]>([]);
-  const [guestName, setGuestName] = useState('');
+    const [guestName, setGuestName] = useState('');
   const [guestScore, setGuestScore] = useState('50');
   
   const [rebalanceResult, setRebalanceResult] = useState<{
@@ -21,24 +20,19 @@ export default function ManualRebalance({ scores, showScores }: { scores: Player
     isBalanced: boolean
   } | null>(null);
 
-  const allAvailableScores = [...scores, ...guests];
+  const allAvailableScores = scores;
 
   const addGuest = (e: React.FormEvent) => {
     e.preventDefault();
     if (guestName.trim() && !isNaN(Number(guestScore))) {
-      const newGuest: PlayerScore = {
-        player: { id: `guest-${Date.now()}`, name: `${guestName.trim()} (אורח)`, claimedByUserId: null },
-        score: Number(guestScore),
-        rankingsCount: 0
-      };
-      setGuests([...guests, newGuest]);
+      onAddGuest(guestName.trim(), Number(guestScore));
       setGuestName('');
       setGuestScore('50');
     }
   };
 
   const removeGuest = (id: string) => {
-    setGuests(guests.filter(g => g.player.id !== id));
+    onRemoveGuest(id);
     const newWhite = new Set(whiteTeamIds);
     newWhite.delete(id);
     setWhiteTeamIds(newWhite);
@@ -177,9 +171,9 @@ export default function ManualRebalance({ scores, showScores }: { scores: Player
             </button>
           </div>
         </form>
-        {guests.length > 0 && (
+        {(scores.filter(s => s.player.isGuest).length > 0) && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {guests.map(g => (
+            {scores.filter(s => s.player.isGuest).map(g => (
               <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
                 {g.player.name} {showScores && `| ${g.score}`}
                 <button onClick={() => removeGuest(g.player.id)} className="text-red-500 hover:text-red-700"><X size={14} /></button>

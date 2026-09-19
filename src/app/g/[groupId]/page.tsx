@@ -146,7 +146,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
 
         <main className="pb-20">
           {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} />}
-          {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} />}
+          {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} />}
           {activeTab === 'players_rank' && (
             <RankingForm 
               groupId={groupId}
