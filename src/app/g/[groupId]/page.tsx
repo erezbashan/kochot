@@ -5,7 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import Leaderboard from '@/components/Leaderboard';
 import RankingForm from '@/components/RankingForm';
 import TeamGenerator from '@/components/TeamGenerator';
-import ManualRebalance from '@/components/ManualRebalance';
+import ManualRebalance from "@/components/ManualRebalance";
+import BenchSubstitutions from "@/components/BenchSubstitutions";
 import GroupSettingsPanel from '@/components/GroupSettingsPanel';
 import AuthModal from '@/components/AuthModal';
 import { addPlayerToGroup, removePlayerFromGroup, addGuestToGroup, submitRanking, claimPlayer } from '@/lib/firestore';
@@ -21,7 +22,10 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   
   const { group, players, loading, calculateScores, getRankingForRater } = useGroupData(groupId);
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState<'teams' | 'rebalance' | 'players_rank' | 'leaderboard' | 'settings'>('teams');
+  const [activeTab, setActiveTab] = useState<'teams' | 'rebalance' | 'subs' | 'players_rank' | 'leaderboard' | 'settings'>('teams');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [whiteTeamIds, setWhiteTeamIds] = useState<Set<string>>(new Set());
+  const [blackTeamIds, setBlackTeamIds] = useState<Set<string>>(new Set());
   const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
 
@@ -115,6 +119,14 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
             </button>
 
             <button 
+              onClick={() => setActiveTab('subs')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'subs' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+              <Users size={20} />
+              <span>עליה מהספסל</span>
+            </button>
+
+            <button 
               onClick={() => setActiveTab('players_rank')}
               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'players_rank' ? 'bg-fuchsia-50 text-fuchsia-700' : 'text-slate-500 hover:bg-slate-50'}`}
             >
@@ -145,8 +157,9 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
         </div>
 
         <main className="pb-20">
-          {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} />}
-          {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} />}
+          {activeTab === 'teams' && <TeamGenerator scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} selectedIds={selectedIds} onChangeSelectedIds={setSelectedIds} onTeamsGenerated={(w, b) => { setWhiteTeamIds(w); setBlackTeamIds(b); }} />}
+          {activeTab === 'rebalance' && <ManualRebalance scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} whiteTeamIds={whiteTeamIds} blackTeamIds={blackTeamIds} onChangeTeams={(w, b) => { setWhiteTeamIds(w); setBlackTeamIds(b); }} />}
+          {activeTab === 'subs' && <BenchSubstitutions scores={scores} showScores={canSeeRankings} onAddGuest={(name, score) => addGuestToGroup(groupId, name, score)} onRemoveGuest={(id) => removePlayerFromGroup(groupId, id)} whiteTeamIds={whiteTeamIds} blackTeamIds={blackTeamIds} onChangeTeams={(w, b) => { setWhiteTeamIds(w); setBlackTeamIds(b); }} />}
           {activeTab === 'players_rank' && (
             <RankingForm 
               groupId={groupId}

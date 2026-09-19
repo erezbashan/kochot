@@ -4,9 +4,7 @@ import { rebalanceTeams, Team } from '@/lib/teamGenerator';
 import { RefreshCw, ArrowLeftRight, CheckCircle2, UserPlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function ManualRebalance({ scores, showScores, onAddGuest, onRemoveGuest }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void }) {
-  const [whiteTeamIds, setWhiteTeamIds] = useState<Set<string>>(new Set());
-  const [blackTeamIds, setBlackTeamIds] = useState<Set<string>>(new Set());
+export default function ManualRebalance({ scores, showScores, onAddGuest, onRemoveGuest, whiteTeamIds, blackTeamIds, onChangeTeams }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void, whiteTeamIds: Set<string>, blackTeamIds: Set<string>, onChangeTeams: (white: Set<string>, black: Set<string>) => void }) {
   
   // Guests feature
     const [guestName, setGuestName] = useState('');
@@ -35,10 +33,9 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
     onRemoveGuest(id);
     const newWhite = new Set(whiteTeamIds);
     newWhite.delete(id);
-    setWhiteTeamIds(newWhite);
     const newBlack = new Set(blackTeamIds);
     newBlack.delete(id);
-    setBlackTeamIds(newBlack);
+    onChangeTeams(newWhite, newBlack);
   };
 
   // Drag and Drop handlers
@@ -64,8 +61,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
     if (target === 'white') newWhite.add(id);
     if (target === 'black') newBlack.add(id);
     
-    setWhiteTeamIds(newWhite);
-    setBlackTeamIds(newBlack);
+    onChangeTeams(newWhite, newBlack);
   };
 
   // Click handler fallback for mobile
@@ -82,8 +78,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
       newBlack.delete(id);
     }
     
-    setWhiteTeamIds(newWhite);
-    setBlackTeamIds(newBlack);
+    onChangeTeams(newWhite, newBlack);
   };
 
   const handleRebalance = () => {

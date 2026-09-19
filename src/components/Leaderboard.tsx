@@ -11,13 +11,13 @@ export default function Leaderboard({ scores }: { scores: PlayerScore[] }) {
         </div>
       </div>
       
-      {scores.length === 0 ? (
+      {scores.filter(s => !s.player.isGuest).length === 0 ? (
         <div className="text-center p-10 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 font-medium">
           אין שחקנים במערכת עדיין.
         </div>
       ) : (
         <div className="space-y-3">
-          {scores.map((s, index) => {
+          {scores.filter(s => !s.player.isGuest).map((s, index) => {
             const isTop3 = index < 3;
             return (
               <div 

@@ -4,9 +4,8 @@ import { PlayerScore } from '@/hooks/useGroupData';
 import { generateTeams, Team } from '@/lib/teamGenerator';
 import { Users, UserPlus, Zap, Check, X } from 'lucide-react';
 
-export default function TeamGenerator({ scores, showScores, onAddGuest, onRemoveGuest }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void }) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  
+export default function TeamGenerator({ scores, showScores, onAddGuest, onRemoveGuest, selectedIds, onChangeSelectedIds, onTeamsGenerated }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void, selectedIds: Set<string>, onChangeSelectedIds: (ids: Set<string>) => void, onTeamsGenerated: (white: Set<string>, black: Set<string>) => void }) {
+    
   // Guests feature
     const [guestName, setGuestName] = useState('');
   const [guestScore, setGuestScore] = useState('50');
@@ -20,7 +19,7 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
     } else {
       newSet.add(id);
     }
-    setSelectedIds(newSet);
+    onChangeSelectedIds(newSet);
   };
 
   const addGuest = (e: React.FormEvent) => {
@@ -36,7 +35,7 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
     onRemoveGuest(id);
     const newSet = new Set(selectedIds);
     newSet.delete(id);
-    setSelectedIds(newSet);
+    onChangeSelectedIds(newSet);
   };
 
   const handleGenerate = () => {
@@ -52,6 +51,7 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
 
     const teams = generateTeams(selectedPlayers);
     setGeneratedTeams(teams);
+    onTeamsGenerated(new Set(teams.teamWhite.players.map(p => p.player.id)), new Set(teams.teamBlack.players.map(p => p.player.id)));
   };
 
   const allAvailableScores = scores.slice().sort((a, b) => 
