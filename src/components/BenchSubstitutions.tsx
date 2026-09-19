@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PlayerScore } from '@/hooks/useGroupData';
+import toast from 'react-hot-toast';
 import { Users, Zap, Check, ArrowDownUp, X, UserPlus } from 'lucide-react';
 
 const calcStdDev = (players: PlayerScore[], totalScore: number) => {
@@ -103,7 +104,9 @@ export default function BenchSubstitutions({
   };
 
   const handleSuggest = () => {
-    if (benchComingUp.length === 0) return;
+    if (benchComingUp.length === 0) {
+      return toast.error('יש לבחור שחקנים לעלייה מהספסל.');
+    }
 
     const totalSize = whiteTeam.length + blackTeam.length + benchComingUp.length;
 
@@ -173,15 +176,13 @@ export default function BenchSubstitutions({
         </p>
       </div>
 
-      {benchComingUp.length > 0 && (
-        <button
+      <button
           onClick={handleSuggest}
           className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-blue-700 flex justify-center items-center gap-2 shadow-sm mb-6 transition-colors"
         >
           <ArrowDownUp size={20} />
           הצע חלוקה הוגנת לעולים מהספסל
         </button>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div 
