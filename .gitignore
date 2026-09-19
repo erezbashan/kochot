@@ -40,3 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .firebase
+
+# temporary script files
+sim*.js
+
+# firebase debug
+firebase-debug.log
+
