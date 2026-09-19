@@ -213,7 +213,7 @@ export default function RankingForm({
         <div className="flex flex-col gap-6">
           <div>
             <div className="flex justify-between items-end mb-3">
-              <h3 className="font-bold text-slate-800">רשימה לדירוג ({rankedPlayers.length})</h3>
+              <h3 className="font-bold text-slate-800">רשימה לדירוג ({rankedPlayers.length}) <span className="md:hidden text-xs font-normal text-slate-500">(גלול בצד ימין)</span></h3>
             </div>
             
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 min-h-[150px]">
@@ -222,9 +222,12 @@ export default function RankingForm({
               ) : (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={rankedPlayers.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                    {rankedPlayers.map((p, index) => (
-                      <SortableItem key={p.id} player={p} index={index} onRemove={moveToUnranked} />
-                    ))}
+                    {/* Add a scroll gutter on the right for mobile */}
+                    <div className="pr-12 md:pr-0">
+                      {rankedPlayers.map((p, index) => (
+                        <SortableItem key={p.id} player={p} index={index} onRemove={moveToUnranked} />
+                      ))}
+                    </div>
                   </SortableContext>
                 </DndContext>
               )}

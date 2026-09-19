@@ -18,26 +18,26 @@ export function SortableItem({ player, index, onRemove }: { player: Player, inde
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.8 : 1,
+    touchAction: 'none' // Important for mobile DND
   };
 
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={`flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-xl shadow-sm mb-2 relative transition-all ${isDragging ? 'z-50 ring-2 ring-blue-400 scale-[1.02] shadow-md' : 'hover:border-blue-200'}`}
+      {...attributes} 
+      {...listeners}
+      className={`flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm mb-2 relative transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'z-50 ring-2 ring-blue-400 scale-[1.02] shadow-md' : 'hover:border-blue-200'}`}
     >
-      <div 
-        {...attributes} 
-        {...listeners}
-        className="text-slate-400 cursor-grab active:cursor-grabbing p-3 touch-none bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
-      >
-        <GripVertical size={24} />
+      <div className="text-gray-300">
+        <GripVertical size={20} />
       </div>
       <span className="font-bold text-lg text-gray-400 w-6 text-center">{index + 1}.</span>
       <span className="flex-1 text-lg font-semibold text-gray-700">{player.name}</span>
       <button 
+        onPointerDown={(e) => e.stopPropagation()} // Prevent DND from intercepting click
         onClick={() => onRemove(player.id)} 
-        className="text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ml-2"
+        className="text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
       >
         לא מכיר
       </button>
