@@ -106,6 +106,24 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
     
     if (result) {
       const diffAfter = Math.abs(result.teamA.totalScore - result.teamB.totalScore);
+      
+      // Apply the swap
+      const newWhite = new Set(whiteTeamIds);
+      const newBlack = new Set(blackTeamIds);
+      
+      const whitePlayerId = whitePlayers.find(p => p.player.name === result.swappedOutA)?.player.id;
+      const blackPlayerId = blackPlayers.find(p => p.player.name === result.swappedOutB)?.player.id;
+      
+      if (whitePlayerId && blackPlayerId) {
+        newWhite.delete(whitePlayerId);
+        newWhite.add(blackPlayerId);
+        
+        newBlack.delete(blackPlayerId);
+        newBlack.add(whitePlayerId);
+        
+        onChangeTeams(newWhite, newBlack);
+      }
+
       setRebalanceResult({
         swappedOutA: result.swappedOutA,
         swappedOutB: result.swappedOutB,
@@ -127,7 +145,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
   return (
     <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200" dir="rtl">
       <div className="mb-6 border-b pb-4">
-        <h2 className="text-xl md:text-2xl font-bold text-slate-800">איזון מחדש ידני</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-slate-800">איזון מחדש</h2>
       </div>
 
       <button 
@@ -138,45 +156,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
         <span>הצע חילוף לאיזון קבוצות אלו</span>
       </button>
 
-      {/* Guests Section */}
-      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
-        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
-          <UserPlus size={16} />
-          הוספת אורח
-        </h3>
-        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
-          <input 
-            type="text" 
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            placeholder="שם האורח"
-            className="flex-1 border border-slate-300 p-2 rounded-lg text-sm"
-          />
-          <div className="flex gap-2">
-            <input 
-              type="number" 
-              value={guestScore}
-              onChange={(e) => setGuestScore(e.target.value)}
-              placeholder="ציון"
-              className="w-20 border border-slate-300 p-2 rounded-lg text-sm text-center"
-              min="0" max="100"
-            />
-            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-              הוסף
-            </button>
-          </div>
-        </form>
-        {(scores.filter(s => s.player.isGuest).length > 0) && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {scores.filter(s => s.player.isGuest).map(g => (
-              <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
-                {g.player.name} {showScores && `| ${g.score}`}
-                <button onClick={() => removeGuest(g.player.id)} className="text-red-500 hover:text-red-700"><X size={14} /></button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* White Bucket */}
@@ -229,7 +209,7 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
         onDrop={(e) => handleDrop(e, 'unassigned')}
         className="mt-6 border-t pt-4"
       >
-        <h4 className="text-sm font-bold text-slate-500 mb-3">שחקנים לא משובצים (גרור לקבוצות):</h4>
+        <h4 className="text-sm font-bold text-slate-500 mb-3">שחקנים לא משובצים (גרור לקבוצות או לחץ):</h4>
         <div className="flex flex-wrap gap-2">
           {unassigned.map(s => (
             <div
@@ -243,6 +223,46 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Guests Section */}
+      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
+          <UserPlus size={16} />
+          הוספת אורח
+        </h3>
+        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
+          <input 
+            type="text" 
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder="שם האורח"
+            className="flex-1 border border-slate-300 p-2 rounded-lg text-sm"
+          />
+          <div className="flex gap-2">
+            <input 
+              type="number" 
+              value={guestScore}
+              onChange={(e) => setGuestScore(e.target.value)}
+              placeholder="ציון"
+              className="w-20 border border-slate-300 p-2 rounded-lg text-sm text-center"
+              min="0" max="100"
+            />
+            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+              הוסף
+            </button>
+          </div>
+        </form>
+        {(scores.filter(s => s.player.isGuest).length > 0) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {scores.filter(s => s.player.isGuest).map(g => (
+              <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
+                {g.player.name} {showScores && `| ${g.score}`}
+                <button onClick={() => removeGuest(g.player.id)} className="text-red-500 hover:text-red-700"><X size={14} /></button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Popup Result */}

@@ -64,47 +64,7 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
         <h2 className="text-xl md:text-2xl font-bold text-slate-800">מי משחק היום?</h2>
       </div>
       
-      {/* Guests Section */}
-      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
-        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
-          <UserPlus size={16} />
-          הוספת אורח
-        </h3>
-        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
-          <input 
-            type="text" 
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            placeholder="שם האורח"
-            className="flex-1 border border-slate-300 p-2 rounded-lg focus:border-blue-500 outline-none text-sm"
-          />
-          <div className="flex gap-2">
-            <input 
-              type="number" 
-              value={guestScore}
-              onChange={(e) => setGuestScore(e.target.value)}
-              placeholder="ציון"
-              className="w-20 border border-slate-300 p-2 rounded-lg focus:border-blue-500 outline-none text-sm text-center"
-              min="0" max="100"
-            />
-            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg flex items-center justify-center hover:bg-slate-800 text-sm font-semibold">
-              הוסף
-            </button>
-          </div>
-        </form>
-        {(scores.filter(s => s.player.isGuest).length > 0) && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {scores.filter(s => s.player.isGuest).map(g => (
-              <span key={g.player.id} className="bg-white border border-slate-300 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
-                {g.player.name} {showScores && <><span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span></>}
-                <button onClick={() => removeGuest(g.player.id)} className="text-slate-400 hover:text-red-500 ml-1">
-                  <X size={14} />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      
 
       <button 
         onClick={handleGenerate}
@@ -145,6 +105,49 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
             )
           })}
         </div>
+      </div>
+
+      
+      {/* Guests Section */}
+      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200 mt-8">
+        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
+          <UserPlus size={16} />
+          הוספת אורח
+        </h3>
+        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
+          <input 
+            type="text" 
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder="שם האורח"
+            className="flex-1 border border-slate-300 p-2 rounded-lg text-sm"
+          />
+          <div className="flex gap-2">
+            <input 
+              type="number" 
+              value={guestScore}
+              onChange={(e) => setGuestScore(e.target.value)}
+              placeholder="ציון"
+              className="w-20 border border-slate-300 p-2 rounded-lg text-sm text-center"
+              min="0" max="100"
+            />
+            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+              הוסף
+            </button>
+          </div>
+        </form>
+        {(scores.filter(s => s.player.isGuest).length > 0) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {scores.filter(s => s.player.isGuest).map(g => (
+              <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
+                {g.player.name} {showScores && <><span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span></>}
+                <button onClick={() => onRemoveGuest(g.player.id)} className="text-slate-400 hover:text-red-500 ml-1">
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {generatedTeams && (

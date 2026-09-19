@@ -67,14 +67,29 @@ export default function BenchSubstitutions({
     setSelectedBenchIds(newSelectedBench);
   };
 
-  // Clicking toggles between unassigned and coming_up
   const handlePlayerClick = (id: string) => {
-    if (whiteTeamIds.has(id) || blackTeamIds.has(id)) return; // Don't click to toggle if in team, force drag
+    const newWhite = new Set(whiteTeamIds);
+    const newBlack = new Set(blackTeamIds);
+    const newSelectedBench = new Set(selectedBenchIds);
     
-    const newSet = new Set(selectedBenchIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedBenchIds(newSet);
+    if (!newWhite.has(id) && !newBlack.has(id) && !newSelectedBench.has(id)) {
+      // Unassigned -> Coming up
+      newSelectedBench.add(id);
+    } else if (newSelectedBench.has(id)) {
+      // Coming up -> White
+      newSelectedBench.delete(id);
+      newWhite.add(id);
+    } else if (newWhite.has(id)) {
+      // White -> Black
+      newWhite.delete(id);
+      newBlack.add(id);
+    } else {
+      // Black -> Unassigned
+      newBlack.delete(id);
+    }
+
+    onChangeTeams(newWhite, newBlack);
+    setSelectedBenchIds(newSelectedBench);
   };
 
   const handleSuggest = () => {
@@ -123,6 +138,13 @@ export default function BenchSubstitutions({
       const addedToWhite = benchComingUp.filter(p => bestWhite.some(w => w.player.id === p.player.id));
       const addedToBlack = benchComingUp.filter(p => bestBlack.some(b => b.player.id === p.player.id));
       
+      // Auto apply
+      onChangeTeams(
+        new Set(bestWhite.map(p => p.player.id)),
+        new Set(bestBlack.map(p => p.player.id))
+      );
+      setSelectedBenchIds(new Set());
+
       setSuggestion({
         addedToWhite,
         addedToBlack,
@@ -137,7 +159,7 @@ export default function BenchSubstitutions({
       <div className="mb-6 border-b pb-4">
         <h2 className="text-xl md:text-2xl font-bold text-slate-800">עליה מהספסל</h2>
         <p className="text-sm text-slate-500 mt-1">
-          גרור שחקנים בין הקבוצות או לסל "עולים מהספסל", והמערכת תשבץ אותם הוגן.
+          גרור (או לחץ בטלפון הנייד) שחקנים בין הקבוצות או לסל "עולים מהספסל", והמערכת תשבץ אותם הוגן.
         </p>
       </div>
 
@@ -221,7 +243,7 @@ export default function BenchSubstitutions({
         onDrop={(e) => handleDrop(e, 'unassigned')}
         className="mt-6 border-t pt-4"
       >
-        <h4 className="text-sm font-bold text-slate-500 mb-3">שאר הספסל:</h4>
+        <h4 className="text-sm font-bold text-slate-500 mb-3">שאר הספסל (גרור או לחץ):</h4>
         <div className="flex flex-wrap gap-2 min-h-[50px]">
           {unassigned.map(s => (
             <div
@@ -283,23 +305,10 @@ export default function BenchSubstitutions({
             
             <div className="flex gap-4">
               <button 
-                onClick={() => {
-                  onChangeTeams(
-                    new Set(suggestion.newWhite.map(p => p.player.id)),
-                    new Set(suggestion.newBlack.map(p => p.player.id))
-                  );
-                  setSelectedBenchIds(new Set());
-                  setSuggestion(null);
-                }}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-colors"
-              >
-                אשר חלוקה
-              </button>
-              <button 
                 onClick={() => setSuggestion(null)}
-                className="flex-1 bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 font-bold py-3 rounded-xl shadow-sm transition-colors"
+                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 rounded-xl shadow-sm transition-colors"
               >
-                ביטול
+                סגור
               </button>
             </div>
           </div>
