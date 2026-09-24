@@ -94,38 +94,42 @@ export function useGroupData(groupId: string) {
       pass1Averages.set(p.id, data.count > 0 ? data.totalScore / data.count : 50);
     });
 
-    // Pass 2: Calculate adjusted scores, where each voter "occupies" the slot closest to their Pass 1 average
+    // Pass 2: Calculate adjusted scores using N slots
     const finalMap = new Map<string, { totalScore: number; count: number }>();
     normalPlayers.forEach(p => finalMap.set(p.id, { totalScore: 0, count: 0 }));
 
+    const N = normalPlayers.length;
+
     rankings.forEach(ranking => {
       const K = ranking.rankedPlayerIds.length;
-      if (K === 0) return;
+      if (K === 0 || N <= 1) return;
 
-      // Voter's estimated strength based on Pass 1
-      const voterScore = pass1Averages.get(ranking.raterId) ?? 50;
-
-      // Generate K+1 possible slots from 100 down to 0
+      // Generate N possible slots from 100 down to 0
       const slots: number[] = [];
-      for (let j = 0; j <= K; j++) {
-        slots.push(100 * (K - j) / K);
+      for (let j = 0; j < N; j++) {
+        slots.push(100 * (N - 1 - j) / (N - 1));
       }
 
-      // Find the slot closest to the voter's score
-      let bestJ = 0;
-      let minDiff = Infinity;
-      for (let j = 0; j <= K; j++) {
-        const diff = Math.abs(slots[j] - voterScore);
-        if (diff < minDiff) {
-          minDiff = diff;
-          bestJ = j;
+      // Determine which players were NOT ranked by this voter (this includes the voter themselves AND "לא מכיר" players)
+      const rankedSet = new Set(ranking.rankedPlayerIds);
+      const unrankedIds = normalPlayers.filter(p => !rankedSet.has(p.id)).map(p => p.id);
+
+      // Each unranked player absorbs the available slot closest to their Pass 1 average
+      unrankedIds.forEach(id => {
+        const baselineScore = pass1Averages.get(id) ?? 50;
+        let bestJ = 0;
+        let minDiff = Infinity;
+        for (let j = 0; j < slots.length; j++) {
+          const diff = Math.abs(slots[j] - baselineScore);
+          if (diff < minDiff) {
+            minDiff = diff;
+            bestJ = j;
+          }
         }
-      }
+        slots.splice(bestJ, 1); // Remove the absorbed slot
+      });
 
-      // Remove the slot that the voter occupies
-      slots.splice(bestJ, 1);
-
-      // Distribute remaining K slots to the ranked players
+      // The remaining slots are given to the ranked players in the order they were ranked
       ranking.rankedPlayerIds.forEach((playerId: string, index: number) => {
         const current = finalMap.get(playerId);
         if (current) {
