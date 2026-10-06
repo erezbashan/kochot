@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model (Pending Schema Verification)
+    // ===============================================================
+    // Collection: groups
+    // Collection: groups/{groupId}/players
+    // Collection: groups/{groupId}/rankings
+    // Note: Schema is currently unknown, so strict type and field limits
+    // are relaxed. In production, exact fields should be validated.
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+       return request.auth != null;
+    }
+
+    function isPayloadSizeValid() {
+      // Basic safeguard: limit number of fields to prevent massive documents.
+      // In a hardened version, check sizes of individual strings and arrays.
+      return request.resource.data.keys().size() < 100;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isPayloadSizeValid();
+      allow update: if isAuthenticated() && isPayloadSizeValid();
+      allow delete: if isAuthenticated();
+
+      match /players/{playerId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isPayloadSizeValid();
+        allow update: if isAuthenticated() && isPayloadSizeValid();
+        allow delete: if isAuthenticated();
+      }
+
+      match /rankings/{rankingId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isPayloadSizeValid();
+        allow update: if isAuthenticated() && isPayloadSizeValid();
+        allow delete: if isAuthenticated();
+      }
+    }
+  }
+}

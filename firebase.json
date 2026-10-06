@@ -17,5 +17,8 @@
       "kochot-4086f.web.app",
       "kochot--kochot-4086f.us-central1.hosted.app"
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
