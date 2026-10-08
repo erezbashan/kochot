@@ -71,7 +71,7 @@ export function useGroupData(groupId: string) {
     const normalPlayerIds = new Set(normalPlayers.map(p => p.id));
     const cleanRankings = rankings.map(r => ({
       ...r,
-      rankedPlayerIds: r.rankedPlayerIds.filter(id => normalPlayerIds.has(id))
+      rankedPlayerIds: Array.from(new Set(r.rankedPlayerIds.filter(id => normalPlayerIds.has(id))))
     }));
 
     // Pass 1: Calculate raw average scores (ignoring the missing spot)
