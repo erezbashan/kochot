@@ -169,7 +169,7 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
                   <h3 className="text-lg font-bold text-slate-800">קבוצה לבנה</h3>
                   {showScores && (
                     <span className="font-mono font-bold bg-white px-2 py-1 rounded text-sm border border-slate-200 text-slate-600">
-                      סה"כ: {generatedTeams.teamWhite.totalScore.toFixed(1)}
+                      סה&quot;כ: {generatedTeams.teamWhite.totalScore.toFixed(1)}
                     </span>
                   )}
                 </div>
@@ -188,7 +188,7 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
                   <h3 className="text-lg font-bold text-slate-100">קבוצה שחורה</h3>
                   {showScores && (
                     <span className="font-mono font-bold bg-slate-800 px-2 py-1 rounded text-sm border border-slate-700 text-slate-300">
-                      סה"כ: {generatedTeams.teamBlack.totalScore.toFixed(1)}
+                      סה&quot;כ: {generatedTeams.teamBlack.totalScore.toFixed(1)}
                     </span>
                   )}
                 </div>

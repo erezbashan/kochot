@@ -38,7 +38,7 @@ export function generateTeams(selectedPlayers: PlayerScore[]): { teamWhite: Team
   const NUM_SAMPLES = 5000;
   
   type Split = { white: PlayerScore[], black: PlayerScore[], diff: number };
-  let bestSplits: Split[] = [];
+  const bestSplits: Split[] = [];
   let minDiff = Infinity;
   
   for (let i = 0; i < NUM_SAMPLES; i++) {
@@ -94,7 +94,7 @@ export function rebalanceTeams(teamA: Team, teamB: Team): { teamA: Team, teamB: 
   const currentScoreDiff = Math.abs(teamA.totalScore - teamB.totalScore);
   const currentStdDevDiff = Math.abs(currentStdDevA - currentStdDevB);
   
-  let currentDiff = currentScoreDiff + (currentStdDevDiff * 0.75);
+  const currentDiff = currentScoreDiff + (currentStdDevDiff * 0.75);
   
   let bestSwap = null;
   let bestDiff = currentDiff;

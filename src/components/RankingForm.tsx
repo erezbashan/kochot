@@ -283,7 +283,7 @@ export default function RankingForm({
               שים לב: פעולה זו תמחק את <strong>{playerToDelete.name}</strong> לחלוטין ממאגר הקבוצה!
             </p>
             <p className="text-slate-500 mb-6 text-xs bg-red-50 p-3 rounded-lg border border-red-100">
-              אם ברצונך רק <strong>לדלג על דירוג השחקן</strong> (כי אינך מכיר אותו), אין צורך למחוק אותו! פשוט השאר אותו ברשימת "הוצאו מהדירוג" (למטה) ואל תלחץ על הפלוס. לחץ על 'ביטול'.
+              אם ברצונך רק <strong>לדלג על דירוג השחקן</strong> (כי אינך מכיר אותו), אין צורך למחוק אותו! פשוט השאר אותו ברשימת &quot;הוצאו מהדירוג&quot; (למטה) ואל תלחץ על הפלוס. לחץ על &apos;ביטול&apos;.
             </p>
             <div className="flex gap-3">
               <button
