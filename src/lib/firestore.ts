@@ -65,6 +65,15 @@ export async function addPlayerToGroup(groupId: string, name: string): Promise<v
   });
 }
 
+export async function addPlayerToGroupWithId(groupId: string, name: string, playerId: string): Promise<void> {
+  const playerRef = doc(db, `groups/${groupId}/players`, playerId);
+  await setDoc(playerRef, {
+    id: playerId,
+    name,
+    claimedByUserId: null
+  });
+}
+
 export async function addGuestToGroup(groupId: string, name: string, score: number): Promise<void> {
   const playerRef = doc(collection(db, `groups/${groupId}/players`));
   await setDoc(playerRef, {

@@ -31,7 +31,8 @@ export default function RankingForm({
   user,
   onAddPlayer,
   onRemovePlayer,
-  canAdd
+  canAdd,
+  isAdmin
 }: { 
   groupId: string,
   players: Player[], 
@@ -41,7 +42,8 @@ export default function RankingForm({
   user: User | null,
   onAddPlayer: (name: string) => void,
   onRemovePlayer: (id: string) => void,
-  canAdd: boolean
+  canAdd: boolean,
+  isAdmin: boolean
 }) {
   const [raterId, setRaterId] = useState('');
   const [rankedPlayers, setRankedPlayers] = useState<Player[]>([]);
@@ -256,11 +258,11 @@ export default function RankingForm({
                       <span>{p.name}</span>
                       <Plus size={14} className="text-slate-400" />
                     </button>
-                    {canAdd && (
+                    {isAdmin && (
                       <button 
                         onClick={() => setPlayerToDelete(p)}
                         className="px-2 py-1.5 border-r border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-400 transition-colors"
-                        title="מחק שחקן"
+                        title="מחיקת שחקן מהקבוצה (למנהלים בלבד)"
                       >
                         <X size={14} />
                       </button>
@@ -276,9 +278,12 @@ export default function RankingForm({
       {playerToDelete && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="text-xl font-bold text-slate-800 mb-2">מחיקת שחקן</h3>
-            <p className="text-slate-600 mb-6">
-              האם אתה בטוח שברצונך למחוק את <strong>{playerToDelete.name}</strong> מהקבוצה?
+            <h3 className="text-xl font-bold text-red-600 mb-2">אזהרה: מחיקת שחקן מהקבוצה</h3>
+            <p className="text-slate-600 mb-4 text-sm font-bold">
+              שים לב: פעולה זו תמחק את <strong>{playerToDelete.name}</strong> לחלוטין ממאגר הקבוצה!
+            </p>
+            <p className="text-slate-500 mb-6 text-xs bg-red-50 p-3 rounded-lg border border-red-100">
+              אם ברצונך רק <strong>לדלג על דירוג השחקן</strong> (כי אינך מכיר אותו), אין צורך למחוק אותו! פשוט השאר אותו ברשימת "הוצאו מהדירוג" (למטה) ואל תלחץ על הפלוס. לחץ על 'ביטול'.
             </p>
             <div className="flex gap-3">
               <button

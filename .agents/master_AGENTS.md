@@ -1,1 +1,0 @@
-/Users/erezbashan/master_AGENTS.md

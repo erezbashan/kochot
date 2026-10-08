@@ -68,11 +68,17 @@ export function useGroupData(groupId: string) {
   const guestPlayers = players.filter(p => p.isGuest);
 
   const calculateScores = (): PlayerScore[] => {
+    const normalPlayerIds = new Set(normalPlayers.map(p => p.id));
+    const cleanRankings = rankings.map(r => ({
+      ...r,
+      rankedPlayerIds: r.rankedPlayerIds.filter(id => normalPlayerIds.has(id))
+    }));
+
     // Pass 1: Calculate raw average scores (ignoring the missing spot)
     const pass1Map = new Map<string, { totalScore: number; count: number }>();
     normalPlayers.forEach(p => pass1Map.set(p.id, { totalScore: 0, count: 0 }));
 
-    rankings.forEach(ranking => {
+    cleanRankings.forEach(ranking => {
       const K = ranking.rankedPlayerIds.length;
       if (K <= 1) return; // Cannot rank just 1 person in raw calculation
 
@@ -100,7 +106,7 @@ export function useGroupData(groupId: string) {
 
     const N = normalPlayers.length;
 
-    rankings.forEach(ranking => {
+    cleanRankings.forEach(ranking => {
       const K = ranking.rankedPlayerIds.length;
       if (K === 0 || N <= 1) return;
 

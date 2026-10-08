@@ -20,7 +20,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   const resolvedParams = use(params);
   const groupId = resolvedParams.groupId;
   
-  const { group, players, loading, calculateScores, getRankingForRater } = useGroupData(groupId);
+  const { group, players, rankings, loading, calculateScores, getRankingForRater } = useGroupData(groupId);
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<'teams' | 'rebalance' | 'subs' | 'players_rank' | 'leaderboard' | 'settings'>('teams');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -74,8 +74,9 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
         <header className="mb-6 mt-4 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div className="text-center sm:text-right">
             <h1 className="text-3xl font-extrabold text-slate-800 mb-1">{group.name}</h1>
-            <p className="text-sm text-slate-500">
-              {players.length} שחקנים רשומים
+            <p className="text-sm text-slate-500 flex items-center justify-center sm:justify-start gap-2">
+              <span>{players.length} שחקנים רשומים</span>
+              <span className="bg-slate-100 text-slate-400 px-1.5 rounded text-xs">v1.1</span>
             </p>
           </div>
           
@@ -171,13 +172,14 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
               onAddPlayer={(name) => addPlayerToGroup(groupId, name)}
               onRemovePlayer={(playerId) => removePlayerFromGroup(groupId, playerId)}
               canAdd={canAddPlayers}
+              isAdmin={isAdmin}
             />
           )}
           {activeTab === 'leaderboard' && canSeeRankings && (
             <Leaderboard scores={scores} />
           )}
           {activeTab === 'settings' && isAdmin && (
-            <GroupSettingsPanel group={group} />
+            <GroupSettingsPanel group={group} rankings={rankings} players={players} groupId={groupId} />
           )}
         </main>
       </div>
