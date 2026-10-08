@@ -77,7 +77,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
             <div className="text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2">
               <span>{players.length} שחקנים רשומים</span>
               <div className="flex items-center gap-2">
-                <span className="bg-slate-100 text-slate-400 px-1.5 rounded text-xs font-mono">v1.2</span>
+                <span className="bg-slate-100 text-slate-400 px-1.5 rounded text-xs font-mono">v1.3</span>
                 <a href="mailto:erezbashan@gmail.com?subject=משוב על מערכת כוחות" className="text-blue-500 hover:text-blue-700 text-xs font-bold underline">
                   שלח משוב
                 </a>
