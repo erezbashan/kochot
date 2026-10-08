@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Group, updateGroupSettings, addPlayerToGroupWithId, Player, Ranking } from '@/lib/firestore';
+import { Group, updateGroupSettings, addPlayerToGroupWithId, cleanupDatabase, Player, Ranking } from '@/lib/firestore';
 import toast from 'react-hot-toast';
 
 export default function GroupSettingsPanel({ group, rankings, players, groupId }: { group: Group, rankings: Ranking[], players: Player[], groupId: string }) {
@@ -30,10 +30,21 @@ export default function GroupSettingsPanel({ group, rankings, players, groupId }
   };
 
   const handleBackup = () => {
+    // Map rankings to include names
+    const enrichedRankings = rankings.map(r => {
+      const raterName = players.find(p => p.id === r.raterId)?.name || r.raterId;
+      const rankedNames = r.rankedPlayerIds.map(id => players.find(p => p.id === id)?.name || id);
+      return {
+        ...r,
+        raterName,
+        rankedNames
+      };
+    });
+
     const backupData = {
       group,
       players,
-      rankings,
+      rankings: enrichedRankings,
       exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -48,13 +59,28 @@ export default function GroupSettingsPanel({ group, rankings, players, groupId }
     toast.success('גיבוי הורד בהצלחה!');
   };
 
+  const handleCleanup = async () => {
+    try {
+      await cleanupDatabase(groupId, rankings, players);
+      toast.success('הניקוי הושלם בהצלחה!');
+    } catch (e) {
+      console.error(e);
+      toast.error('שגיאה בניקוי הנתונים');
+    }
+  };
+
   return (
     <div className="bg-white p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">הגדרות קבוצה (למנהלים בלבד)</h2>
-        <button onClick={handleBackup} className="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-700">
-          גיבוי נתונים
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleCleanup} className="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-700">
+            נקה נתונים (DEL1, DEL2, DEL3)
+          </button>
+          <button onClick={handleBackup} className="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-700">
+            גיבוי נתונים
+          </button>
+        </div>
       </div>
       
       <div className="space-y-4 mb-10">

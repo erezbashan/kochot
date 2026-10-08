@@ -125,3 +125,29 @@ export async function updateGroupSettings(groupId: string, settings: Partial<Gro
     [`settings.${Object.keys(settings)[0]}`]: Object.values(settings)[0]
   });
 }
+
+export async function cleanupDatabase(groupId: string, rankings: Ranking[], players: Player[]): Promise<void> {
+  const del3 = players.find(p => p.name === 'DEL3');
+  if (del3) {
+    await updateDoc(doc(db, `groups/${groupId}/players`, del3.id), { name: 'רן בירנבאום' });
+  }
+
+  const del1 = players.find(p => p.name === 'DEL1');
+  const del2 = players.find(p => p.name === 'DEL2');
+  const toDelete = [del1, del2].filter(Boolean) as Player[];
+
+  for (const p of toDelete) {
+    await deleteDoc(doc(db, `groups/${groupId}/players`, p.id));
+    const theirRanking = rankings.find(r => r.raterId === p.id);
+    if (theirRanking) {
+      await deleteDoc(doc(db, `groups/${groupId}/rankings`, theirRanking.id));
+    }
+
+    for (const r of rankings) {
+      if (r.rankedPlayerIds.includes(p.id)) {
+        const newRanked = r.rankedPlayerIds.filter(id => id !== p.id);
+        await updateDoc(doc(db, `groups/${groupId}/rankings`, r.id), { rankedPlayerIds: newRanked });
+      }
+    }
+  }
+}
