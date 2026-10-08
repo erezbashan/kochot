@@ -23,6 +23,7 @@ export type Player = {
   claimedByUserId: string | null;
   isGuest?: boolean;
   guestScore?: number;
+  isDeleted?: boolean;
   expiresAt?: number;
 };
 
@@ -88,7 +89,7 @@ export async function addGuestToGroup(groupId: string, name: string, score: numb
 
 export async function removePlayerFromGroup(groupId: string, playerId: string): Promise<void> {
   const playerRef = doc(db, `groups/${groupId}/players`, playerId);
-  await deleteDoc(playerRef);
+  await updateDoc(playerRef, { isDeleted: true });
 }
 
 export async function claimPlayer(groupId: string, playerId: string, userId: string): Promise<void> {

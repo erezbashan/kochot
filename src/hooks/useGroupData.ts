@@ -45,7 +45,7 @@ export function useGroupData(groupId: string) {
     const unsubPlayers = onSnapshot(playersRef, (snapshot) => {
       const now = Date.now();
       const allPlayers = snapshot.docs.map(doc => doc.data() as Player);
-      const activePlayers = allPlayers.filter(p => !p.isGuest || (p.expiresAt && p.expiresAt > now));
+      const activePlayers = allPlayers.filter(p => !p.isDeleted && (!p.isGuest || (p.expiresAt && p.expiresAt > now)));
       setPlayers(activePlayers);
       isPlayersLoaded = true;
       checkLoaded();
