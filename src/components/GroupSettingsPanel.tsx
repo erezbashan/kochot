@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { Group, updateGroupSettings, addPlayerToGroupWithId, cleanupDatabase, Player, Ranking } from '@/lib/firestore';
 import toast from 'react-hot-toast';
 
@@ -59,24 +61,31 @@ export default function GroupSettingsPanel({ group, rankings, players, groupId }
     toast.success('גיבוי הורד בהצלחה!');
   };
 
-  const handleCleanup = async () => {
+  
+  const handleDeleteGhost = async (ghostId: string) => {
     try {
-      await cleanupDatabase(groupId, rankings, players);
-      toast.success('הניקוי הושלם בהצלחה!');
+      const theirRanking = rankings.find(r => r.raterId === ghostId);
+      if (theirRanking) {
+        await deleteDoc(doc(db, `groups/${groupId}/rankings`, theirRanking.id));
+      }
+      for (const r of rankings) {
+        if (r.rankedPlayerIds.includes(ghostId)) {
+          const newRanked = r.rankedPlayerIds.filter(id => id !== ghostId);
+          await updateDoc(doc(db, `groups/${groupId}/rankings`, r.id), { rankedPlayerIds: newRanked });
+        }
+      }
+      toast.success('השחקן נמחק לצמיתות מכל הדירוגים');
     } catch (e) {
       console.error(e);
-      toast.error('שגיאה בניקוי הנתונים');
+      toast.error('שגיאה במחיקת שחקן');
     }
   };
-
-  return (
+return (
     <div className="bg-white p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100" dir="rtl">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">הגדרות קבוצה (למנהלים בלבד)</h2>
         <div className="flex gap-2">
-          <button onClick={handleCleanup} className="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-700">
-            נקה נתונים (DEL1, DEL2, DEL3)
-          </button>
+          
           <button onClick={handleBackup} className="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-700">
             גיבוי נתונים
           </button>
@@ -161,9 +170,16 @@ export default function GroupSettingsPanel({ group, rankings, players, groupId }
                     />
                     <button 
                       onClick={() => handleRecover(id)}
-                      className="bg-red-600 text-white px-4 py-1.5 rounded font-bold text-sm hover:bg-red-700"
+                      className="bg-blue-600 text-white px-4 py-1.5 rounded font-bold text-sm hover:bg-blue-700"
                     >
                       שחזר
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteGhost(id)}
+                      className="bg-red-100 text-red-600 px-3 py-1.5 rounded font-bold text-sm hover:bg-red-200"
+                      title="מחק שחקן זה מכל הדירוגים לצמיתות"
+                    >
+                      מחק לצמיתות
                     </button>
                   </div>
                 </div>
