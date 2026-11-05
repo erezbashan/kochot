@@ -145,3 +145,66 @@ export function rebalanceTeams(teamA: Team, teamB: Team): { teamA: Team, teamB: 
   
   return null; // No single swap improves the balance
 }
+
+// Suggest fair assignment for bench players coming up into existing White and Black teams
+export function suggestBenchSubstitutions(
+  whiteTeam: PlayerScore[],
+  blackTeam: PlayerScore[],
+  benchComingUp: PlayerScore[]
+): {
+  addedToWhite: PlayerScore[];
+  addedToBlack: PlayerScore[];
+  newWhite: PlayerScore[];
+  newBlack: PlayerScore[];
+} | null {
+  if (benchComingUp.length === 0) return null;
+
+  let bestDiff = Infinity;
+  let bestWhite: PlayerScore[] = [];
+  let bestBlack: PlayerScore[] = [];
+
+  const numCombinations = Math.pow(2, benchComingUp.length);
+
+  for (let i = 0; i < numCombinations; i++) {
+    const currentWhite = [...whiteTeam];
+    const currentBlack = [...blackTeam];
+
+    for (let j = 0; j < benchComingUp.length; j++) {
+      if ((i & (1 << j)) !== 0) {
+        currentWhite.push(benchComingUp[j]);
+      } else {
+        currentBlack.push(benchComingUp[j]);
+      }
+    }
+
+    const sizeDiff = Math.abs(currentWhite.length - currentBlack.length);
+    if (sizeDiff > 1) continue; // Only accept balanced team sizes
+
+    const whiteScore = calcScore(currentWhite);
+    const blackScore = calcScore(currentBlack);
+    const whiteStdDev = calcStdDev(currentWhite, whiteScore);
+    const blackStdDev = calcStdDev(currentBlack, blackScore);
+
+    const scoreDiff = Math.abs(whiteScore - blackScore);
+    const stdDevDiff = Math.abs(whiteStdDev - blackStdDev);
+    const diff = scoreDiff + (stdDevDiff * 1.5);
+
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestWhite = currentWhite;
+      bestBlack = currentBlack;
+    }
+  }
+
+  if (bestDiff === Infinity) return null;
+
+  const addedToWhite = benchComingUp.filter(p => bestWhite.some(w => w.player.id === p.player.id));
+  const addedToBlack = benchComingUp.filter(p => bestBlack.some(b => b.player.id === p.player.id));
+
+  return {
+    addedToWhite,
+    addedToBlack,
+    newWhite: bestWhite,
+    newBlack: bestBlack
+  };
+}

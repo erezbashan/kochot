@@ -43,6 +43,11 @@ next-env.d.ts
 
 # temporary script files
 sim*.js
+scripts/scratch/
+/backups/
+/.agents/
+kochot_backup_*.json
+final_ratings.json
 
 # firebase debug
 firebase-debug.log

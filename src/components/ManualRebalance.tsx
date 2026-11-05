@@ -1,33 +1,35 @@
 import React, { useState } from 'react';
 import { PlayerScore } from '@/hooks/useGroupData';
 import { rebalanceTeams, Team } from '@/lib/teamGenerator';
-import { RefreshCw, ArrowLeftRight, CheckCircle2, UserPlus, X } from 'lucide-react';
+import { RefreshCw, ArrowLeftRight, CheckCircle2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import TeamAssignmentBoard from './TeamAssignmentBoard';
+import GuestManager from './GuestManager';
 
-export default function ManualRebalance({ scores, showScores, onAddGuest, onRemoveGuest, whiteTeamIds, blackTeamIds, onChangeTeams }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void, whiteTeamIds: Set<string>, blackTeamIds: Set<string>, onChangeTeams: (white: Set<string>, black: Set<string>) => void }) {
-  
-  // Guests feature
-    const [guestName, setGuestName] = useState('');
-  const [guestScore, setGuestScore] = useState('50');
-  
+export default function ManualRebalance({
+  scores,
+  showScores,
+  onAddGuest,
+  onRemoveGuest,
+  whiteTeamIds,
+  blackTeamIds,
+  onChangeTeams,
+}: {
+  scores: PlayerScore[];
+  showScores: boolean;
+  onAddGuest: (name: string, score: number) => void;
+  onRemoveGuest: (id: string) => void;
+  whiteTeamIds: Set<string>;
+  blackTeamIds: Set<string>;
+  onChangeTeams: (white: Set<string>, black: Set<string>) => void;
+}) {
   const [rebalanceResult, setRebalanceResult] = useState<{
-    swappedOutA: string,
-    swappedOutB: string,
-    diffBefore: number,
-    diffAfter: number,
-    isBalanced: boolean
+    swappedOutA: string;
+    swappedOutB: string;
+    diffBefore: number;
+    diffAfter: number;
+    isBalanced: boolean;
   } | null>(null);
-
-  const allAvailableScores = scores;
-
-  const addGuest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (guestName.trim() && !isNaN(Number(guestScore))) {
-      onAddGuest(guestName.trim(), Number(guestScore));
-      setGuestName('');
-      setGuestScore('50');
-    }
-  };
 
   const removeGuest = (id: string) => {
     onRemoveGuest(id);
@@ -38,89 +40,56 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
     onChangeTeams(newWhite, newBlack);
   };
 
-  // Drag and Drop handlers
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    e.dataTransfer.setData('playerId', id);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // allow drop
-  };
-
-  const handleDrop = (e: React.DragEvent, target: 'unassigned' | 'white' | 'black') => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData('playerId');
-    if (!id) return;
-    
-    const newWhite = new Set(whiteTeamIds);
-    const newBlack = new Set(blackTeamIds);
-    
-    newWhite.delete(id);
-    newBlack.delete(id);
-    
-    if (target === 'white') newWhite.add(id);
-    if (target === 'black') newBlack.add(id);
-    
-    onChangeTeams(newWhite, newBlack);
-  };
-
-  // Click handler fallback for mobile
-  const handlePlayerClick = (id: string) => {
-    const newWhite = new Set(whiteTeamIds);
-    const newBlack = new Set(blackTeamIds);
-    
-    if (!newWhite.has(id) && !newBlack.has(id)) {
-      newWhite.add(id);
-    } else if (newWhite.has(id)) {
-      newWhite.delete(id);
-      newBlack.add(id);
-    } else {
-      newBlack.delete(id);
-    }
-    
-    onChangeTeams(newWhite, newBlack);
-  };
-
   const handleRebalance = () => {
-    const whitePlayers = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
-    const blackPlayers = allAvailableScores.filter(s => blackTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
+    const whitePlayers = scores
+      .filter((s) => whiteTeamIds.has(s.player.id))
+      .sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
+    const blackPlayers = scores
+      .filter((s) => blackTeamIds.has(s.player.id))
+      .sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
 
     if (whitePlayers.length === 0 || blackPlayers.length === 0) {
       return toast.error('יש להוסיף שחקנים לשתי הקבוצות.');
     }
-    
+
     const teamWhite: Team = {
       name: 'לבן',
       players: whitePlayers,
-      totalScore: whitePlayers.reduce((sum, p) => sum + p.score, 0)
+      totalScore: whitePlayers.reduce((sum, p) => sum + p.score, 0),
     };
-    
+
     const teamBlack: Team = {
       name: 'שחור',
       players: blackPlayers,
-      totalScore: blackPlayers.reduce((sum, p) => sum + p.score, 0)
+      totalScore: blackPlayers.reduce((sum, p) => sum + p.score, 0),
     };
 
     const diffBefore = Math.abs(teamWhite.totalScore - teamBlack.totalScore);
     const result = rebalanceTeams(teamWhite, teamBlack);
-    
+
     if (result) {
-      const diffAfter = Math.abs(result.teamA.totalScore - result.teamB.totalScore);
-      
+      const diffAfter = Math.abs(
+        result.teamA.totalScore - result.teamB.totalScore
+      );
+
       // Apply the swap
       const newWhite = new Set(whiteTeamIds);
       const newBlack = new Set(blackTeamIds);
-      
-      const whitePlayerId = whitePlayers.find(p => p.player.name === result.swappedOutA)?.player.id;
-      const blackPlayerId = blackPlayers.find(p => p.player.name === result.swappedOutB)?.player.id;
-      
+
+      const whitePlayerId = whitePlayers.find(
+        (p) => p.player.name === result.swappedOutA
+      )?.player.id;
+      const blackPlayerId = blackPlayers.find(
+        (p) => p.player.name === result.swappedOutB
+      )?.player.id;
+
       if (whitePlayerId && blackPlayerId) {
         newWhite.delete(whitePlayerId);
         newWhite.add(blackPlayerId);
-        
+
         newBlack.delete(blackPlayerId);
         newBlack.add(whitePlayerId);
-        
+
         onChangeTeams(newWhite, newBlack);
       }
 
@@ -129,141 +98,55 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
         swappedOutB: result.swappedOutB,
         diffBefore,
         diffAfter,
-        isBalanced: false
+        isBalanced: false,
       });
     } else {
       setRebalanceResult({
-        swappedOutA: '', swappedOutB: '', diffBefore, diffAfter: diffBefore, isBalanced: true
+        swappedOutA: '',
+        swappedOutB: '',
+        diffBefore,
+        diffAfter: diffBefore,
+        isBalanced: true,
       });
     }
   };
 
-  const unassigned = allAvailableScores.filter(s => !whiteTeamIds.has(s.player.id) && !blackTeamIds.has(s.player.id)).sort((a, b) => a.player.name.localeCompare(b.player.name, 'he'));
-  const whitePlayers = allAvailableScores.filter(s => whiteTeamIds.has(s.player.id));
-  const blackPlayers = allAvailableScores.filter(s => blackTeamIds.has(s.player.id));
-
   return (
-    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200" dir="rtl">
+    <div
+      className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200"
+      dir="rtl"
+    >
       <div className="mb-6 border-b pb-4">
-        <h2 className="text-xl md:text-2xl font-bold text-slate-800">איזון מחדש</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-slate-800">
+          איזון מחדש
+        </h2>
       </div>
 
-      <button 
+      <button
         onClick={handleRebalance}
         className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-blue-700 flex justify-center items-center gap-2 shadow-sm mb-6 transition-colors"
       >
-        <RefreshCw size={20} /> 
+        <RefreshCw size={20} />
         <span>הצע חילוף לאיזון קבוצות אלו</span>
       </button>
 
-      
+      <TeamAssignmentBoard
+        scores={scores}
+        showScores={showScores}
+        whiteTeamIds={whiteTeamIds}
+        blackTeamIds={blackTeamIds}
+        includeComingUp={false}
+        onChangeAssignment={(newWhite, newBlack) =>
+          onChangeTeams(newWhite, newBlack)
+        }
+      />
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* White Bucket */}
-        <div 
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, 'white')}
-          className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-4 min-h-[150px]"
-        >
-          <h4 className="font-bold text-slate-800 mb-2 border-b pb-2">קבוצה לבנה ({whitePlayers.length}) <span className="md:hidden text-xs font-normal text-slate-500">(לחץ להעברה לשחור)</span></h4>
-          <div className="flex flex-wrap gap-2">
-            {whitePlayers.map(s => (
-              <div
-                key={s.player.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, s.player.id)}
-                onClick={() => handlePlayerClick(s.player.id)}
-                className="bg-white border border-slate-300 px-3 py-2 rounded-lg text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing hover:bg-slate-50"
-              >
-                {s.player.name}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Black Bucket */}
-        <div 
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, 'black')}
-          className="bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-4 min-h-[150px]"
-        >
-          <h4 className="font-bold text-white mb-2 border-b border-slate-700 pb-2">קבוצה שחורה ({blackPlayers.length}) <span className="md:hidden text-xs font-normal text-slate-400">(לחץ להעברה לספסל)</span></h4>
-          <div className="flex flex-wrap gap-2">
-            {blackPlayers.map(s => (
-              <div
-                key={s.player.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, s.player.id)}
-                onClick={() => handlePlayerClick(s.player.id)}
-                className="bg-black text-white border border-slate-600 px-3 py-2 rounded-lg text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing hover:bg-gray-800"
-              >
-                {s.player.name}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div 
-        onDragOver={handleDragOver}
-        onDrop={(e) => handleDrop(e, 'unassigned')}
-        className="mt-6 border-t pt-4"
-      >
-        <h4 className="text-sm font-bold text-slate-500 mb-3"><span className="hidden md:inline">שחקנים לא משובצים (גרור לקבוצות):</span><span className="md:hidden">שחקנים לא משובצים (לחץ להעברה ללבן):</span></h4>
-        <div className="flex flex-wrap gap-2">
-          {unassigned.map(s => (
-            <div
-              key={s.player.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, s.player.id)}
-              onClick={() => handlePlayerClick(s.player.id)}
-              className="bg-white border border-slate-200 px-3 py-2 rounded-lg text-sm text-slate-700 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-sm"
-            >
-              {s.player.name} {showScores && <span className="text-xs text-slate-400 ml-1">{s.score.toFixed(1)}</span>}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Guests Section */}
-      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
-        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
-          <UserPlus size={16} />
-          הוספת אורח
-        </h3>
-        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
-          <input 
-            type="text" 
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            placeholder="שם האורח"
-            className="flex-1 border border-slate-300 p-2 rounded-lg text-sm"
-          />
-          <div className="flex gap-2">
-            <input 
-              type="number" 
-              value={guestScore}
-              onChange={(e) => setGuestScore(e.target.value)}
-              placeholder="ציון"
-              className="w-20 border border-slate-300 p-2 rounded-lg text-sm text-center"
-              min="0" max="100"
-            />
-            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-              הוסף
-            </button>
-          </div>
-        </form>
-        {(scores.filter(s => s.player.isGuest).length > 0) && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {scores.filter(s => s.player.isGuest).map(g => (
-              <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
-                {g.player.name} {showScores && `| ${g.score}`}
-                <button onClick={() => removeGuest(g.player.id)} className="text-red-500 hover:text-red-700"><X size={14} /></button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <GuestManager
+        scores={scores}
+        showScores={showScores}
+        onAddGuest={onAddGuest}
+        onRemoveGuest={removeGuest}
+      />
 
       {/* Popup Result */}
       {rebalanceResult && (
@@ -271,49 +154,70 @@ export default function ManualRebalance({ scores, showScores, onAddGuest, onRemo
           <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-4 border-b flex justify-between items-center bg-slate-50">
               <h3 className="text-lg font-bold text-slate-800">תוצאת איזון</h3>
-              <button 
-                onClick={() => setRebalanceResult(null)} 
+              <button
+                onClick={() => setRebalanceResult(null)}
                 className="p-1 hover:bg-slate-200 rounded-full"
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 text-center">
               {rebalanceResult.isBalanced ? (
                 <div>
-                  <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">הקבוצות מאוזנות!</h3>
-                  <p className="text-sm text-slate-500">הפער קטן מספיק, אין חילוף בודד שישפר משמעותית את המצב.</p>
+                  <CheckCircle2
+                    size={48}
+                    className="text-emerald-500 mx-auto mb-4"
+                  />
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">
+                    הקבוצות מאוזנות!
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    הפער קטן מספיק, אין חילוף בודד שישפר משמעותית את המצב.
+                  </p>
                 </div>
               ) : (
                 <div>
-                  <ArrowLeftRight size={48} className="text-blue-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-slate-800 mb-4">חילוף מומלץ:</h3>
-                  
+                  <ArrowLeftRight
+                    size={48}
+                    className="text-blue-500 mx-auto mb-4"
+                  />
+                  <h3 className="text-xl font-bold text-slate-800 mb-4">
+                    חילוף מומלץ:
+                  </h3>
+
                   <div className="flex flex-col gap-2 mb-6">
                     <div className="bg-slate-100 p-2 rounded-lg text-sm border font-bold">
-                      {rebalanceResult.swappedOutA} <span className="font-normal text-slate-500">(לשחור)</span>
+                      {rebalanceResult.swappedOutA}{' '}
+                      <span className="font-normal text-slate-500">(לשחור)</span>
                     </div>
                     <div className="text-blue-400">
                       <ArrowLeftRight size={20} className="mx-auto" />
                     </div>
                     <div className="bg-slate-900 text-white p-2 rounded-lg text-sm font-bold">
-                      {rebalanceResult.swappedOutB} <span className="font-normal text-slate-400">(ללבן)</span>
+                      {rebalanceResult.swappedOutB}{' '}
+                      <span className="font-normal text-slate-400">(ללבן)</span>
                     </div>
                   </div>
-                  
+
                   {showScores && (
                     <div className="text-xs text-slate-500 flex justify-center gap-4">
-                      <span>פער לפני: {rebalanceResult.diffBefore.toFixed(1)}</span>
-                      <span className="text-emerald-600 font-bold">פער אחרי: {rebalanceResult.diffAfter.toFixed(1)}</span>
+                      <span>
+                        פער לפני: {rebalanceResult.diffBefore.toFixed(1)}
+                      </span>
+                      <span className="text-emerald-600 font-bold">
+                        פער אחרי: {rebalanceResult.diffAfter.toFixed(1)}
+                      </span>
                     </div>
                   )}
                 </div>
               )}
             </div>
             <div className="p-4 bg-slate-50 border-t">
-              <button onClick={() => setRebalanceResult(null)} className="w-full bg-slate-200 text-slate-800 p-2 rounded-lg font-bold hover:bg-slate-300">
+              <button
+                onClick={() => setRebalanceResult(null)}
+                className="w-full bg-slate-200 text-slate-800 p-2 rounded-lg font-bold hover:bg-slate-300"
+              >
                 סגור
               </button>
             </div>

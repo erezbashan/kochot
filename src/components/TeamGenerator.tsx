@@ -2,14 +2,10 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { PlayerScore } from '@/hooks/useGroupData';
 import { generateTeams, Team } from '@/lib/teamGenerator';
-import { Users, UserPlus, Zap, Check, X } from 'lucide-react';
+import { Zap, Check, X } from 'lucide-react';
+import GuestManager from './GuestManager';
 
 export default function TeamGenerator({ scores, showScores, onAddGuest, onRemoveGuest, selectedIds, onChangeSelectedIds, onTeamsGenerated }: { scores: PlayerScore[], showScores: boolean, onAddGuest: (name: string, score: number) => void, onRemoveGuest: (id: string) => void, selectedIds: Set<string>, onChangeSelectedIds: (ids: Set<string>) => void, onTeamsGenerated: (white: Set<string>, black: Set<string>) => void }) {
-    
-  // Guests feature
-    const [guestName, setGuestName] = useState('');
-  const [guestScore, setGuestScore] = useState('50');
-
   const [generatedTeams, setGeneratedTeams] = useState<{teamWhite: Team, teamBlack: Team} | null>(null);
 
   const togglePlayer = (id: string) => {
@@ -20,15 +16,6 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
       newSet.add(id);
     }
     onChangeSelectedIds(newSet);
-  };
-
-  const addGuest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (guestName.trim() && !isNaN(Number(guestScore))) {
-      onAddGuest(guestName.trim(), Number(guestScore));
-      setGuestName('');
-      setGuestScore('50');
-    }
   };
 
   const removeGuest = (id: string) => {
@@ -108,47 +95,12 @@ export default function TeamGenerator({ scores, showScores, onAddGuest, onRemove
       </div>
 
       
-      {/* Guests Section */}
-      <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200 mt-8">
-        <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2 text-sm">
-          <UserPlus size={16} />
-          הוספת אורח
-        </h3>
-        <form onSubmit={addGuest} className="flex flex-col sm:flex-row gap-2">
-          <input 
-            type="text" 
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            placeholder="שם האורח"
-            className="flex-1 border border-slate-300 p-2 rounded-lg text-sm"
-          />
-          <div className="flex gap-2">
-            <input 
-              type="number" 
-              value={guestScore}
-              onChange={(e) => setGuestScore(e.target.value)}
-              placeholder="ציון"
-              className="w-20 border border-slate-300 p-2 rounded-lg text-sm text-center"
-              min="0" max="100"
-            />
-            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-              הוסף
-            </button>
-          </div>
-        </form>
-        {(scores.filter(s => s.player.isGuest).length > 0) && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {scores.filter(s => s.player.isGuest).map(g => (
-              <span key={g.player.id} className="bg-white border px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 flex items-center gap-2">
-                {g.player.name} {showScores && <><span className="text-slate-400">|</span> <span className="text-blue-600">{g.score}</span></>}
-                <button onClick={() => onRemoveGuest(g.player.id)} className="text-slate-400 hover:text-red-500 ml-1">
-                  <X size={14} />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <GuestManager
+        scores={scores}
+        showScores={showScores}
+        onAddGuest={onAddGuest}
+        onRemoveGuest={removeGuest}
+      />
 
       {generatedTeams && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm">
