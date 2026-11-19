@@ -2,28 +2,194 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // ===============================================================
-    // Assumed Data Model (Pending Schema Verification)
+    // Assumed Data Model
     // ===============================================================
+    //
+    // This security rules file assumes the following data structures:
+    //
     // Collection: groups
-    // Collection: groups/{groupId}/players
-    // Collection: groups/{groupId}/rankings
-    // Note: Schema is currently unknown, so strict type and field limits
-    // are relaxed. In production, exact fields should be validated.
+    // Document ID: {groupId} (auto-generated unguessable capability ID)
+    // Fields:
+    //   - id: string (required, immutable, == groupId, 1..128 chars)
+    //   - name: string (required, 1..100 chars) - group display name
+    //   - admins: list<string> (required, 1..50 UIDs; size 1 == creator on create)
+    //   - settings: map (required, exact keys):
+    //       - showRanking: bool (required)
+    //       - requireLoginToRank: bool (required)
+    //       - strictAdmin: bool (required)
+    //
+    // Subcollection: groups/{groupId}/players
+    // Document ID: {playerId} (auto-generated or recovered player ID)
+    // Fields:
+    //   - id: string (required, immutable, == playerId, 1..128 chars)
+    //   - name: string (required, 1..100 chars) - player display name
+    //   - claimedByUserId: string | null (required, null or UID 1..128 chars)
+    //   - isGuest: bool (optional) - true for temporary guest players
+    //   - guestScore: number (optional, 0..100) - manual skill score for guests
+    //   - isDeleted: bool (optional) - soft-delete flag
+    //   - expiresAt: number (optional, epoch ms > 0) - guest expiration timestamp
+    //
+    // Subcollection: groups/{groupId}/rankings
+    // Document ID: {rankingId} (auto-generated)
+    // Fields:
+    //   - id: string (required, immutable, == rankingId, 1..128 chars)
+    //   - raterId: string (required, immutable, 1..128 chars) - player ID of rater
+    //   - rankedPlayerIds: list<string> (required, 0..200 items) - ordered player IDs
+    //   - timestamp: number (required, epoch ms > 0) - client Date.now()
+    //
+    // Access Model Notes:
+    //   - Groups are shared via unguessable auto-generated IDs (/g/{groupId}).
+    //   - Single-document get on /groups/{groupId} and reads on its players/rankings
+    //     subcollections are permitted for link holders (including unauthenticated
+    //     visitors), while listing /groups is restricted to authenticated admins
+    //     querying their own groups (where admins array-contains auth.uid).
+    //   - No PII (email, phone, address) is stored in Firestore documents.
+    //
     // ===============================================================
 
     // ===============================================================
     // Helper Functions
     // ===============================================================
+
     function isAuthenticated() {
-       return request.auth != null;
+      return request.auth != null;
     }
 
-    function isPayloadSizeValid() {
-      // Basic safeguard: limit number of fields to prevent massive documents.
-      // In a hardened version, check sizes of individual strings and arrays.
-      return request.resource.data.keys().size() < 100;
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function groupExists(groupId) {
+      return exists(/databases/$(database)/documents/groups/$(groupId));
+    }
+
+    function getGroup(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId));
+    }
+
+    function isGroupAdmin(groupId) {
+      return isAuthenticated() &&
+             groupExists(groupId) &&
+             request.auth.uid in getGroup(groupId).data.admins;
+    }
+
+    function playerExists(groupId, playerId) {
+      return exists(/databases/$(database)/documents/groups/$(groupId)/players/$(playerId));
+    }
+
+    function getPlayer(groupId, playerId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)/players/$(playerId));
+    }
+
+    // ===============================================================
+    // Domain Validators (Used in BOTH create and update)
+    // ===============================================================
+
+    function isValidGroupSettings(settings) {
+      return settings is map &&
+             settings.keys().hasAll(['showRanking', 'requireLoginToRank', 'strictAdmin']) &&
+             settings.keys().hasOnly(['showRanking', 'requireLoginToRank', 'strictAdmin']) &&
+             settings.showRanking is bool &&
+             settings.requireLoginToRank is bool &&
+             settings.strictAdmin is bool;
+    }
+
+    function isValidGroup(data, groupId) {
+      return hasRequiredFields(data, ['id', 'name', 'admins', 'settings']) &&
+             hasOnlyAllowedFields(data, ['id', 'name', 'admins', 'settings']) &&
+             data.id is string && data.id == groupId && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.admins is list && data.admins.size() >= 1 && data.admins.size() <= 50 &&
+             data.admins[0] is string && data.admins[0].size() > 0 && data.admins[0].size() <= 128 &&
+             isValidGroupSettings(data.settings);
+    }
+
+    function isValidPlayer(data, playerId) {
+      return hasRequiredFields(data, ['id', 'name', 'claimedByUserId']) &&
+             hasOnlyAllowedFields(data, ['id', 'name', 'claimedByUserId', 'isGuest', 'guestScore', 'isDeleted', 'expiresAt']) &&
+             data.id is string && data.id == playerId && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (data.claimedByUserId == null || (data.claimedByUserId is string && data.claimedByUserId.size() > 0 && data.claimedByUserId.size() <= 128)) &&
+             (!('isGuest' in data) || data.isGuest is bool) &&
+             (!('guestScore' in data) || (data.guestScore is number && data.guestScore >= 0 && data.guestScore <= 100)) &&
+             (!('isDeleted' in data) || data.isDeleted is bool) &&
+             (!('expiresAt' in data) || (data.expiresAt is number && data.expiresAt > 0 && data.expiresAt <= 8640000000000000));
+    }
+
+    function isValidRanking(data, rankingId) {
+      return hasRequiredFields(data, ['id', 'raterId', 'rankedPlayerIds', 'timestamp']) &&
+             hasOnlyAllowedFields(data, ['id', 'raterId', 'rankedPlayerIds', 'timestamp']) &&
+             data.id is string && data.id == rankingId && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.raterId is string && data.raterId.size() > 0 && data.raterId.size() <= 128 &&
+             data.rankedPlayerIds is list && data.rankedPlayerIds.size() <= 200 &&
+             (data.rankedPlayerIds.size() == 0 || (data.rankedPlayerIds[0] is string && data.rankedPlayerIds[0].size() > 0 && data.rankedPlayerIds[0].size() <= 128)) &&
+             data.timestamp is number && data.timestamp > 0 && data.timestamp <= 8640000000000000;
+    }
+
+    // ===============================================================
+    // Business Logic Authorization Helpers
+    // ===============================================================
+
+    // Any visitor to an existing group may add a temporary guest player (expires <= 24h)
+    function isValidGuestPlayerCreate(data) {
+      return data.get('isGuest', false) == true &&
+             data.claimedByUserId == null &&
+             !data.get('isDeleted', false) &&
+             'guestScore' in data &&
+             'expiresAt' in data &&
+             data.expiresAt <= request.time.toMillis() + 86400000;
+    }
+
+    // When strictAdmin is disabled, any visitor may add an unclaimed normal player
+    function isOpenNormalPlayerCreate(groupId, data) {
+      return getGroup(groupId).data.settings.get('strictAdmin', false) == false &&
+             data.claimedByUserId == null &&
+             !data.get('isGuest', false) &&
+             !data.get('isDeleted', false) &&
+             !('guestScore' in data) &&
+             !('expiresAt' in data);
+    }
+
+    // Authenticated users may claim an unclaimed, active, non-guest player for themselves
+    function isValidPlayerClaim() {
+      return isAuthenticated() &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimedByUserId']) &&
+             resource.data.claimedByUserId == null &&
+             request.resource.data.claimedByUserId == request.auth.uid &&
+             !resource.data.get('isGuest', false) &&
+             !resource.data.get('isDeleted', false);
+    }
+
+    // Any visitor may soft-delete a guest player (matching GuestManager)
+    function isValidGuestSoftDelete() {
+      return resource.data.get('isGuest', false) == true &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isDeleted']) &&
+             request.resource.data.isDeleted == true;
+    }
+
+    // Non-admin rater authorization: enforces requireLoginToRank and claimedByUserId ownership
+    function canRankAsPlayer(playerData) {
+      return !playerData.get('isGuest', false) &&
+             !playerData.get('isDeleted', false) &&
+             (playerData.claimedByUserId == null ||
+              (isAuthenticated() && playerData.claimedByUserId == request.auth.uid));
+    }
+
+    function canNonAdminWriteRanking(groupId, raterId) {
+      let groupData = getGroup(groupId).data;
+      return (groupData.settings.get('requireLoginToRank', false) == false || isAuthenticated()) &&
+             playerExists(groupId, raterId) &&
+             canRankAsPlayer(getPlayer(groupId, raterId).data);
     }
 
     // ===============================================================
@@ -36,23 +202,70 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isPayloadSizeValid();
-      allow update: if isAuthenticated() && isPayloadSizeValid();
-      allow delete: if isAuthenticated();
+      // Capability-link access: anyone with the group ID can fetch the group doc
+      allow get: if true;
+
+      // Listing groups is restricted to authenticated admins querying their own groups
+      // Matches: query(collection(db, 'groups'), where('admins', 'array-contains', userId))
+      allow list: if isAuthenticated() && request.auth.uid in resource.data.admins;
+
+      // Authenticated users can create a new group with themselves as the sole initial admin
+      allow create: if isAuthenticated() &&
+                       isValidGroup(request.resource.data, groupId) &&
+                       request.resource.data.admins.size() == 1 &&
+                       request.resource.data.admins[0] == request.auth.uid;
+
+      // Only existing group admins can update group settings or metadata; id is immutable
+      allow update: if isAuthenticated() &&
+                       request.auth.uid in resource.data.admins &&
+                       isValidGroup(request.resource.data, groupId) &&
+                       areImmutableFieldsUnchanged(['id']);
+
+      // Only existing group admins can delete the group
+      allow delete: if isAuthenticated() && request.auth.uid in resource.data.admins;
 
       match /players/{playerId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isPayloadSizeValid();
-        allow update: if isAuthenticated() && isPayloadSizeValid();
-        allow delete: if isAuthenticated();
+        // Link holders (including unauthenticated visitors) can read players for a group
+        allow read: if true;
+
+        // Create requires parent group to exist and valid player schema
+        allow create: if groupExists(groupId) &&
+                         isValidPlayer(request.resource.data, playerId) &&
+                         (isGroupAdmin(groupId) ||
+                          isValidGuestPlayerCreate(request.resource.data) ||
+                          isOpenNormalPlayerCreate(groupId, request.resource.data));
+
+        // Update requires valid player schema and immutable id
+        // Evaluates zero-read non-admin checks before admin lookup
+        allow update: if isValidPlayer(request.resource.data, playerId) &&
+                         areImmutableFieldsUnchanged(['id']) &&
+                         (isValidGuestSoftDelete() ||
+                          isValidPlayerClaim() ||
+                          isGroupAdmin(groupId));
+
+        // Hard delete is restricted to group admins
+        allow delete: if isGroupAdmin(groupId);
       }
 
       match /rankings/{rankingId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isPayloadSizeValid();
-        allow update: if isAuthenticated() && isPayloadSizeValid();
-        allow delete: if isAuthenticated();
+        // Link holders (including unauthenticated visitors) can read rankings to compute scores
+        allow read: if true;
+
+        // Create requires parent group to exist, valid ranking schema, and rater/admin authorization
+        allow create: if groupExists(groupId) &&
+                         isValidRanking(request.resource.data, rankingId) &&
+                         (isGroupAdmin(groupId) ||
+                          canNonAdminWriteRanking(groupId, request.resource.data.raterId));
+
+        // Update requires parent group to exist, valid ranking schema, immutable id/raterId, and authorization
+        allow update: if groupExists(groupId) &&
+                         isValidRanking(request.resource.data, rankingId) &&
+                         areImmutableFieldsUnchanged(['id', 'raterId']) &&
+                         (isGroupAdmin(groupId) ||
+                          canNonAdminWriteRanking(groupId, resource.data.raterId));
+
+        // Delete is restricted to group admins (e.g., ghost cleanup)
+        allow delete: if isGroupAdmin(groupId);
       }
     }
   }

@@ -14,6 +14,7 @@ export function useGroupData(groupId: string) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!groupId) return;
@@ -28,8 +29,15 @@ export function useGroupData(groupId: string) {
 
     const checkLoaded = () => {
       if (isGroupLoaded && isPlayersLoaded && isRankingsLoaded) {
+        setError(null);
         setLoading(false);
       }
+    };
+
+    const handleSnapshotError = (err: Error) => {
+      console.error('Firestore snapshot error:', err);
+      setError(err.message || 'שגיאה בטעינת הקבוצה');
+      setLoading(false);
     };
 
     const unsubGroup = onSnapshot(groupRef, (doc) => {
@@ -40,7 +48,7 @@ export function useGroupData(groupId: string) {
       }
       isGroupLoaded = true;
       checkLoaded();
-    });
+    }, handleSnapshotError);
 
     const unsubPlayers = onSnapshot(playersRef, (snapshot) => {
       const now = Date.now();
@@ -49,13 +57,13 @@ export function useGroupData(groupId: string) {
       setPlayers(activePlayers);
       isPlayersLoaded = true;
       checkLoaded();
-    });
+    }, handleSnapshotError);
 
     const unsubRankings = onSnapshot(rankingsRef, (snapshot) => {
       setRankings(snapshot.docs.map(doc => doc.data() as Ranking));
       isRankingsLoaded = true;
       checkLoaded();
-    });
+    }, handleSnapshotError);
 
     return () => {
       unsubGroup();
@@ -167,5 +175,5 @@ export function useGroupData(groupId: string) {
     return rankings.find(r => r.raterId === raterId);
   };
 
-  return { group, players: normalPlayers, allActivePlayers: players, rankings, loading, calculateScores, getRankingForRater };
+  return { group, players: normalPlayers, allActivePlayers: players, rankings, loading, error, calculateScores, getRankingForRater };
 }

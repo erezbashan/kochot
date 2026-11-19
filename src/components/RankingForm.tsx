@@ -36,7 +36,7 @@ export default function RankingForm({
 }: { 
   groupId: string,
   players: Player[], 
-  onSubmitRanking: (raterId: string, rankedIds: string[]) => void,
+  onSubmitRanking: (raterId: string, rankedIds: string[]) => Promise<boolean> | boolean | void,
   getRankingForRater: (raterId: string) => Ranking | undefined,
   requireLogin: boolean,
   user: User | null,
@@ -134,15 +134,17 @@ export default function RankingForm({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (requireLogin && !user) {
       return toast.error('יש להתחבר תחילה כדי לדרג.');
     }
     if (!raterId) return toast.error('אנא בחר מי אתה למעלה.');
     if (rankedPlayers.length < 2) return toast.error('חייבים לדרג לפחות 2 שחקנים.');
     
-    onSubmitRanking(raterId, rankedPlayers.map(p => p.id));
-    toast.success('הדירוג נשמר בהצלחה!');
+    const saved = await onSubmitRanking(raterId, rankedPlayers.map(p => p.id));
+    if (saved !== false) {
+      toast.success('הדירוג נשמר בהצלחה!');
+    }
   };
 
   if (players.length === 0) return null;

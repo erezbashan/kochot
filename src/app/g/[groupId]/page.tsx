@@ -20,7 +20,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   const resolvedParams = use(params);
   const groupId = resolvedParams.groupId;
   
-  const { group, players, rankings, loading, calculateScores, getRankingForRater } = useGroupData(groupId);
+  const { group, players, rankings, loading, error, calculateScores, getRankingForRater } = useGroupData(groupId);
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<'teams' | 'rebalance' | 'subs' | 'players_rank' | 'leaderboard' | 'settings'>('teams');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -30,6 +30,31 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   const router = useRouter();
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl" dir="rtl">טוען קבוצה...</div>;
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        <div className="font-bold text-xl text-red-600">שגיאה בטעינת הקבוצה</div>
+        <p className="text-sm text-slate-500 max-w-md">{error}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-700"
+          >
+            נסה שוב
+          </button>
+          {!user && (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-200 flex items-center gap-2"
+            >
+              <LogIn size={16} /> התחבר
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (!group) return <div className="min-h-screen flex items-center justify-center font-bold text-xl text-red-600" dir="rtl">קבוצה לא נמצאה!</div>;
 
   const scores = calculateScores();
@@ -41,25 +66,32 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   const canAddPlayers = !group.settings.strictAdmin || isAdmin;
 
   // Handle player claim
-  const handleClaimAndRank = (raterId: string, rankedIds: string[]) => {
-    if (user) {
-      // Check if user already claimed someone
-      const existingClaim = players.find(p => p.claimedByUserId === user.uid);
-      if (!existingClaim) {
-        // Claim this player
-        claimPlayer(groupId, raterId, user.uid);
-      } else if (existingClaim.id !== raterId) {
-        toast.error("אתה כבר משויך לשחקן אחר בקבוצה זו.");
-        return;
+  const handleClaimAndRank = async (raterId: string, rankedIds: string[]): Promise<boolean> => {
+    try {
+      if (user) {
+        // Check if user already claimed someone
+        const existingClaim = players.find(p => p.claimedByUserId === user.uid);
+        if (!existingClaim) {
+          // Claim this player before submitting ranking
+          await claimPlayer(groupId, raterId, user.uid);
+        } else if (existingClaim.id !== raterId) {
+          toast.error("אתה כבר משויך לשחקן אחר בקבוצה זו.");
+          return false;
+        }
       }
+      
+      // Save to local storage for anonymous users or fast memory
+      if (!user) {
+        localStorage.setItem(`kochot_${groupId}_raterId`, raterId);
+      }
+      
+      await submitRanking(groupId, raterId, rankedIds);
+      return true;
+    } catch (err) {
+      console.error('Failed to save ranking:', err);
+      toast.error('שגיאה בשמירת הדירוג.');
+      return false;
     }
-    
-    // Save to local storage for anonymous users or fast memory
-    if (!user) {
-      localStorage.setItem(`kochot_${groupId}_raterId`, raterId);
-    }
-    
-    submitRanking(groupId, raterId, rankedIds);
   };
 
   const copyLink = () => {
@@ -77,7 +109,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
             <div className="text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2">
               <span>{players.length} שחקנים רשומים</span>
               <div className="flex items-center gap-2">
-                <span className="bg-slate-100 text-slate-400 px-1.5 rounded text-xs font-mono">v1.4</span>
+                <span className="bg-slate-100 text-slate-400 px-1.5 rounded text-xs font-mono">v1.5</span>
                 <a href="mailto:erezbashan@gmail.com?subject=משוב על מערכת כוחות" className="text-blue-500 hover:text-blue-700 text-xs font-bold underline">
                   שלח משוב
                 </a>
