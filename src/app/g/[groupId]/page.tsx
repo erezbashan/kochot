@@ -11,7 +11,7 @@ import GroupSettingsPanel from '@/components/GroupSettingsPanel';
 import AuthModal from '@/components/AuthModal';
 import { addPlayerToGroup, removePlayerFromGroup, addGuestToGroup, submitRanking, claimPlayer } from '@/lib/firestore';
 import { useState, use } from 'react';
-import { Users, Trophy, ClipboardList, RefreshCw, Settings, LogIn, Share2, LogOut } from 'lucide-react';
+import { Users, Trophy, ClipboardList, RefreshCw, Settings, LogIn, Share2, LogOut, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -32,16 +32,22 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl" dir="rtl">טוען קבוצה...</div>;
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center bg-slate-50" dir="rtl">
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
         <div className="font-bold text-xl text-red-600">שגיאה בטעינת הקבוצה</div>
         <p className="text-sm text-slate-500 max-w-md">{error}</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <button
             onClick={() => window.location.reload()}
             className="bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-700"
           >
             נסה שוב
+          </button>
+          <button
+            onClick={() => router.push('/')}
+            className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-100 flex items-center gap-2"
+          >
+            <Home size={16} /> לדף הקבוצות
           </button>
           {!user && (
             <button
@@ -55,7 +61,19 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
       </div>
     );
   }
-  if (!group) return <div className="min-h-screen flex items-center justify-center font-bold text-xl text-red-600" dir="rtl">קבוצה לא נמצאה!</div>;
+  if (!group) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center bg-slate-50" dir="rtl">
+        <div className="font-bold text-xl text-red-600">קבוצה לא נמצאה!</div>
+        <button
+          onClick={() => router.push('/')}
+          className="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-700 flex items-center gap-2"
+        >
+          <Home size={16} /> לדף הקבוצות
+        </button>
+      </div>
+    );
+  }
 
   const scores = calculateScores();
   const isAdmin = user ? group.admins.includes(user.uid) : false;
@@ -109,7 +127,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
             <div className="text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2">
               <span>{players.length} שחקנים רשומים</span>
               <div className="flex items-center gap-2">
-                <span className="bg-slate-100 text-slate-400 px-1.5 rounded text-xs font-mono">v1.5</span>
+                <span className="bg-slate-100 text-slate-400 px-1.5 rounded text-xs font-mono">v1.6</span>
                 <a href="mailto:erezbashan@gmail.com?subject=משוב על מערכת כוחות" className="text-blue-500 hover:text-blue-700 text-xs font-bold underline">
                   שלח משוב
                 </a>
